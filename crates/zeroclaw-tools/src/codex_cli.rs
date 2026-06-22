@@ -13,14 +13,21 @@ const SAFE_ENV_VARS: &[&str] = &[
     "PATH", "HOME", "TERM", "LANG", "LC_ALL", "LC_CTYPE", "USER", "SHELL", "TMPDIR",
 ];
 
+fn is_forbidden_provider_env(name: &str) -> bool {
+    matches!(
+        name.trim().to_ascii_uppercase().as_str(),
+        "OPENAI_API_KEY" | "OPENAI_BASE_URL" | "OPENAI_ORG_ID" | "OPENAI_PROJECT_ID"
+    )
+}
+
 /// Delegates coding tasks to the Codex CLI (`codex exec`).
 ///
 /// This creates a two-tier agent architecture: ZeroClaw orchestrates high-level
 /// tasks and delegates complex coding work to Codex, which has its own
 /// agent loop with file editing and shell tools.
 ///
-/// Authentication uses the `codex` binary's own session by default. No API key
-/// is needed unless `env_passthrough` includes `OPENAI_API_KEY`.
+/// Authentication uses the `codex` binary's own approved session. Direct
+/// OpenAI API-key env passthrough is blocked by runtime policy.
 pub struct CodexCliTool {
     security: Arc<SecurityPolicy>,
     config: CodexCliConfig,
@@ -164,6 +171,15 @@ impl Tool for CodexCliTool {
         }
         for var in &self.config.env_passthrough {
             let trimmed = var.trim();
+            if is_forbidden_provider_env(trimmed) {
+                return Ok(ToolResult {
+                    success: false,
+                    output: String::new(),
+                    error: Some(format!(
+                        "env_passthrough entry `{trimmed}` is blocked: GPT/Codex-family runtimes must use Codex CLI/app/SDK/ACP session auth, not direct OpenAI API credentials."
+                    )),
+                });
+            }
             if !trimmed.is_empty()
                 && let Ok(val) = std::env::var(trimmed)
             {
@@ -345,6 +361,19 @@ mod tests {
             config.env_passthrough.is_empty(),
             "env_passthrough should default to empty"
         );
+    }
+
+    #[tokio::test]
+    async fn codex_cli_rejects_direct_provider_env_passthrough() {
+        let mut config = test_config();
+        config.env_passthrough = vec!["OPENAI_API_KEY".into()];
+        let tool = CodexCliTool::new(test_security(AutonomyLevel::Full), config);
+        let result = tool
+            .execute(json!({"prompt": "hello"}))
+            .await
+            .expect("policy rejection should return a result");
+        assert!(!result.success);
+        assert!(result.error.as_deref().unwrap_or("").contains("blocked"));
     }
 
     #[test]

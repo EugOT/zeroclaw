@@ -13,15 +13,21 @@ const SAFE_ENV_VARS: &[&str] = &[
     "PATH", "HOME", "TERM", "LANG", "LC_ALL", "LC_CTYPE", "USER", "SHELL", "TMPDIR",
 ];
 
+fn is_forbidden_provider_env(name: &str) -> bool {
+    matches!(
+        name.trim().to_ascii_uppercase().as_str(),
+        "ANTHROPIC_API_KEY" | "ANTHROPIC_BASE_URL" | "CLAUDE_API_KEY" | "CLAUDE_BASE_URL"
+    )
+}
+
 /// Delegates coding tasks to the Claude Code CLI (`claude -p`).
 ///
 /// This creates a two-tier agent architecture: ZeroClaw orchestrates high-level
 /// tasks and delegates complex coding work to Claude Code, which has its own
 /// agent loop with Read/Edit/Bash tools.
 ///
-/// Authentication uses the `claude` binary's own OAuth session (Max subscription)
-/// by default. No API key is needed unless `env_passthrough` includes
-/// `ANTHROPIC_API_KEY` for API-key billing.
+/// Authentication uses the `claude` binary's own approved session. Direct
+/// Anthropic API-key env passthrough is blocked by runtime policy.
 pub struct ClaudeCodeTool {
     security: Arc<SecurityPolicy>,
     config: ClaudeCodeConfig,
@@ -214,6 +220,15 @@ impl Tool for ClaudeCodeTool {
         }
         for var in &self.config.env_passthrough {
             let trimmed = var.trim();
+            if is_forbidden_provider_env(trimmed) {
+                return Ok(ToolResult {
+                    success: false,
+                    output: String::new(),
+                    error: Some(format!(
+                        "env_passthrough entry `{trimmed}` is blocked: Claude-family runtimes must use Claude Code CLI session auth, not direct Anthropic API credentials."
+                    )),
+                });
+            }
             if !trimmed.is_empty()
                 && let Ok(val) = std::env::var(trimmed)
             {
@@ -435,6 +450,19 @@ mod tests {
             config.env_passthrough.is_empty(),
             "env_passthrough should default to empty (Max subscription needs no API key)"
         );
+    }
+
+    #[tokio::test]
+    async fn claude_code_rejects_direct_provider_env_passthrough() {
+        let mut config = test_config();
+        config.env_passthrough = vec!["ANTHROPIC_API_KEY".into()];
+        let tool = ClaudeCodeTool::new(test_security(AutonomyLevel::Full), config);
+        let result = tool
+            .execute(json!({"prompt": "hello"}))
+            .await
+            .expect("policy rejection should return a result");
+        assert!(!result.success);
+        assert!(result.error.as_deref().unwrap_or("").contains("blocked"));
     }
 
     #[test]

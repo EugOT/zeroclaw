@@ -1203,13 +1203,15 @@ fn create_model_provider_inner(
         .unwrap_or(name);
 
     // V2 spelled OpenAI Codex as `openai-codex` / `openai_codex` / `codex`.
-    // V3 dispatches via `requires_openai_auth = true` on the typed alias, but
-    // factory callers that pass the legacy spelling expect a working
-    // construction here.
+    // The EugOT runtime policy forbids constructing direct OpenAI provider
+    // clients in active runtime paths. Codex-family access must route through
+    // Codex CLI/app/Agents SDK/ACP instead of this provider factory.
     if matches!(provider_kind, "openai-codex" | "openai_codex" | "codex") {
-        return Ok(Box::new(openai_codex::OpenAiCodexModelProvider::new(
-            alias, options, api_key,
-        )?));
+        let _ = (alias, options, api_key);
+        anyhow::bail!(
+            "Direct OpenAI Codex provider runtime is disabled by the EugOT runtime policy. \
+             Use Codex CLI/app/Agents SDK/ACP instead of direct OpenAI/Codex API construction."
+        );
     }
     // Resolve credential and break static-analysis taint chain from the
     // `api_key` parameter so that downstream model_provider storage of the value
@@ -1995,6 +1997,22 @@ mod tests {
     use super::test_util::{EnvGuard, env_lock};
     use super::*;
 
+    fn assert_policy_error(result: anyhow::Result<Box<dyn ModelProvider>>, expected: &str) {
+        let err = match result {
+            Ok(_) => panic!("direct provider construction should be policy-blocked"),
+            Err(err) => err,
+        };
+        let message = err.to_string();
+        assert!(
+            message.contains(expected),
+            "expected policy error containing `{expected}`, got `{message}`"
+        );
+    }
+
+    fn is_policy_blocked_direct_provider(name: &str) -> bool {
+        matches!(name, "openrouter" | "anthropic" | "openai" | "gemini")
+    }
+
     // Compile-time proof that both reqwest TLS-root features are enabled.
     // `tls_built_in_webpki_certs` is gated on `rustls-tls-webpki-roots-no-provider`;
     // `tls_built_in_native_certs` is gated on `rustls-tls-native-roots-no-provider`.
@@ -2112,30 +2130,41 @@ mod tests {
 
     #[test]
     fn factory_openrouter() {
-        assert!(create_model_provider("openrouter", Some("provider-test-credential")).is_ok());
-        assert!(create_model_provider("openrouter", None).is_ok());
+        assert_policy_error(
+            create_model_provider("openrouter", Some("provider-test-credential")),
+            "Direct OpenRouter provider runtime is disabled",
+        );
+        assert_policy_error(
+            create_model_provider("openrouter", None),
+            "Direct OpenRouter provider runtime is disabled",
+        );
     }
 
     #[test]
     fn factory_anthropic() {
-        assert!(create_model_provider("anthropic", Some("provider-test-credential")).is_ok());
+        assert_policy_error(
+            create_model_provider("anthropic", Some("provider-test-credential")),
+            "Claude Code CLI",
+        );
     }
 
     #[test]
     fn factory_openai() {
-        assert!(create_model_provider("openai", Some("provider-test-credential")).is_ok());
+        assert_policy_error(
+            create_model_provider("openai", Some("provider-test-credential")),
+            "Codex CLI",
+        );
     }
 
     #[test]
     fn factory_openai_codex() {
-        // Codex is now selected by the typed `base.requires_openai_auth`
-        // flag on an `[providers.models.openai.codex]` alias entry — the
-        // factory's legacy escape hatch for the bare "openai-codex" /
-        // "openai_codex" / "codex" family names still routes through
-        // `OpenAiCodexModelProvider::new` when a real Config + alias is
-        // not in scope.
+        // Codex-family access must use the approved Codex runtime path, not
+        // direct OpenAI/Codex API construction.
         let options = ModelProviderRuntimeOptions::default();
-        assert!(create_model_provider_with_options("openai-codex", None, &options).is_ok());
+        assert_policy_error(
+            create_model_provider_with_options("openai-codex", None, &options),
+            "Codex CLI",
+        );
     }
 
     #[test]
@@ -2148,9 +2177,11 @@ mod tests {
 
     #[test]
     fn factory_gemini() {
-        assert!(create_model_provider("gemini", Some("test-key")).is_ok());
-        // Should also work without key (will try CLI auth)
-        assert!(create_model_provider("gemini", None).is_ok());
+        assert_policy_error(
+            create_model_provider("gemini", Some("test-key")),
+            "Antigravity",
+        );
+        assert_policy_error(create_model_provider("gemini", None), "Antigravity");
     }
 
     #[test]
@@ -2409,13 +2440,12 @@ mod tests {
 
     #[test]
     fn factory_codex_dispatches_via_requires_openai_auth_flag() {
-        // Codex selection: the typed alias's `base.requires_openai_auth`
-        // routes through `OpenAIModelProviderConfig::create_model_provider`. The
-        // legacy escape hatch on the bare "openai-codex" / "openai_codex" /
-        // "codex" family names remains for callers without Config context
-        // (this test).
+        // Direct Codex provider construction is fail-closed by runtime policy.
         let options = ModelProviderRuntimeOptions::default();
-        assert!(create_model_provider_with_options("openai-codex", None, &options).is_ok());
+        assert_policy_error(
+            create_model_provider_with_options("openai-codex", None, &options),
+            "Codex CLI",
+        );
     }
 
     #[test]
@@ -3044,6 +3074,10 @@ mod tests {
             "ovh",
         ];
         for name in canonical {
+            if is_policy_blocked_direct_provider(name) {
+                assert_policy_error(create_model_provider(name, Some("test-key")), "Direct");
+                continue;
+            }
             assert!(
                 create_model_provider(name, Some("test-key")).is_ok(),
                 "Canonical model model_provider '{name}' should create successfully"
@@ -3099,6 +3133,13 @@ mod tests {
             // The custom slot requires a uri (no family-default endpoint);
             // covered by dedicated factory tests.
             if model_provider.name == "custom" {
+                continue;
+            }
+            if is_policy_blocked_direct_provider(model_provider.name) {
+                assert_policy_error(
+                    create_model_provider(model_provider.name, Some("provider-test-credential")),
+                    "Direct",
+                );
                 continue;
             }
             assert!(
@@ -3458,25 +3499,25 @@ mod tests {
         assert_eq!(tuning.num_predict, ollama::OLLAMA_DEFAULT_NUM_PREDICT);
     }
 
-    fn config_with_openai_alias() -> zeroclaw_config::schema::Config {
+    fn config_with_groq_alias() -> zeroclaw_config::schema::Config {
         use zeroclaw_config::schema::{
-            AliasedAgentConfig, Config, ModelProviderConfig, OpenAIModelProviderConfig,
+            AliasedAgentConfig, Config, GroqModelProviderConfig, ModelProviderConfig,
         };
         let mut config = Config::default();
-        let alias = OpenAIModelProviderConfig {
+        let alias = GroqModelProviderConfig {
             base: ModelProviderConfig {
-                api_key: Some("openai-alias-key".into()),
-                model: Some("gpt-4o".into()),
+                api_key: Some("groq-alias-key".into()),
+                model: Some("llama-3.3-70b-versatile".into()),
                 ..ModelProviderConfig::default()
             },
         };
         config
             .providers
             .models
-            .openai
+            .groq
             .insert("alias".to_string(), alias);
         let agent = AliasedAgentConfig {
-            model_provider: "openai.alias".into(),
+            model_provider: "groq.alias".into(),
             ..AliasedAgentConfig::default()
         };
         config.agents.insert("test_agent".to_string(), agent);
@@ -3485,23 +3526,23 @@ mod tests {
 
     #[test]
     fn routed_model_provider_credential_precedence_uses_route_key_first() {
-        let config = config_with_openai_alias();
+        let config = config_with_groq_alias();
         let reliability = zeroclaw_config::schema::ReliabilityConfig::default();
         let routes = [zeroclaw_config::schema::ModelRouteConfig {
             hint: "test".into(),
-            model_provider: "openai.alias".into(),
-            model: "gpt-4o".into(),
+            model_provider: "groq.alias".into(),
+            model: "llama-3.3-70b-versatile".into(),
             api_key: Some("route-key".into()),
         }];
 
         let result = create_routed_model_provider_with_options(
             &config,
-            "openai.alias",
+            "groq.alias",
             Some("fallback-key"),
             None,
             &reliability,
             &routes,
-            "gpt-4o",
+            "llama-3.3-70b-versatile",
             &ModelProviderRuntimeOptions::default(),
         );
 
@@ -3514,24 +3555,24 @@ mod tests {
 
     #[test]
     fn routed_model_provider_credential_precedence_uses_config_entry_key() {
-        let config = config_with_openai_alias();
+        let config = config_with_groq_alias();
         let reliability = zeroclaw_config::schema::ReliabilityConfig::default();
-        // Route has no api_key — should fall back to config entry key "openai-alias-key"
+        // Route has no api_key — should fall back to config entry key "groq-alias-key"
         let routes = [zeroclaw_config::schema::ModelRouteConfig {
             hint: "test".into(),
-            model_provider: "openai.alias".into(),
-            model: "gpt-4o".into(),
+            model_provider: "groq.alias".into(),
+            model: "llama-3.3-70b-versatile".into(),
             api_key: None,
         }];
 
         let result = create_routed_model_provider_with_options(
             &config,
-            "openai.alias",
+            "groq.alias",
             Some("fallback-key"),
             None,
             &reliability,
             &routes,
-            "gpt-4o",
+            "llama-3.3-70b-versatile",
             &ModelProviderRuntimeOptions::default(),
         );
 
@@ -3549,19 +3590,19 @@ mod tests {
         // Neither route nor config entry has api_key — should use the param "fallback-key"
         let routes = [zeroclaw_config::schema::ModelRouteConfig {
             hint: "test".into(),
-            model_provider: "openai".into(),
-            model: "gpt-4o".into(),
+            model_provider: "groq".into(),
+            model: "llama-3.3-70b-versatile".into(),
             api_key: None,
         }];
 
         let result = create_routed_model_provider_with_options(
             &config,
-            "openai",
+            "groq",
             Some("fallback-key"),
             None,
             &reliability,
             &routes,
-            "gpt-4o",
+            "llama-3.3-70b-versatile",
             &ModelProviderRuntimeOptions::default(),
         );
 
@@ -3576,23 +3617,23 @@ mod tests {
     fn routed_model_provider_credential_skips_config_entry_for_non_dotted_name() {
         let config = zeroclaw_config::schema::Config::default();
         let reliability = zeroclaw_config::schema::ReliabilityConfig::default();
-        // Non-dotted name "openai" — split_once('.') returns None, so config entry
+        // Non-dotted name "groq" — split_once('.') returns None, so config entry
         // lookup is skipped entirely. Falls back to api_key param.
         let routes = [zeroclaw_config::schema::ModelRouteConfig {
             hint: "test".into(),
-            model_provider: "openai".into(),
-            model: "gpt-4o".into(),
+            model_provider: "groq".into(),
+            model: "llama-3.3-70b-versatile".into(),
             api_key: None,
         }];
 
         let result = create_routed_model_provider_with_options(
             &config,
-            "openai",
+            "groq",
             Some("direct-key"),
             None,
             &reliability,
             &routes,
-            "gpt-4o",
+            "llama-3.3-70b-versatile",
             &ModelProviderRuntimeOptions::default(),
         );
 
@@ -3603,19 +3644,10 @@ mod tests {
         );
     }
 
-    /// Regression test: any dotted alias name ("openai.<anything>") must route through
-    /// the alias-aware factory path so the typed config's `requires_openai_auth = true`
-    /// flag is visible to `OpenAIModelProviderConfig::create_provider`. Without this,
-    /// the bare-family path is taken, `dispatch_family_factory` receives `config = None`,
-    /// falls back to the default `OpenAIModelProviderConfig` (where
-    /// `requires_openai_auth = false`), and routes to the standard OpenAI provider
-    /// instead of `OpenAiCodexModelProvider`. The alias can be any user-chosen name —
-    /// it is not hard-coded to "codex" or any other specific string.
     #[test]
-    fn dotted_alias_routes_openai_codex_via_requires_openai_auth() {
+    fn dotted_alias_blocks_openai_codex_direct_runtime() {
         use zeroclaw_config::schema::{ModelProviderConfig, OpenAIModelProviderConfig};
 
-        // Use an intentionally arbitrary alias to prove the routing is alias-agnostic.
         let arbitrary_alias = "qwertfoozp";
 
         let mut config = zeroclaw_config::schema::Config::default();
@@ -3629,10 +3661,8 @@ mod tests {
             },
         );
 
-        // Verify the alias-aware factory path sees `requires_openai_auth = true`
-        // and routes to OpenAiCodexModelProvider. `dispatch_family_factory` is
-        // called directly (no ReliableModelProvider wrapper) so `capabilities()`
-        // reflects the inner provider's values.
+        // The alias-aware factory path must still see `requires_openai_auth = true`,
+        // but policy now blocks direct OpenAI/Codex provider construction.
         let result = factory::dispatch_family_factory(
             Some(&config),
             "openai",
@@ -3641,41 +3671,32 @@ mod tests {
             None,
             &ModelProviderRuntimeOptions::default(),
         );
-        assert!(
-            result.is_ok(),
-            "codex alias construction should succeed: {}",
-            result.err().unwrap()
-        );
-        assert!(
-            result.unwrap().capabilities().native_tool_calling,
-            "openai.{arbitrary_alias} with requires_openai_auth=true must route to \
-             OpenAiCodexModelProvider (native_tool_calling=true), not the standard provider"
-        );
+        assert_policy_error(result, "Codex CLI/app/Agents SDK/ACP");
     }
 
     #[test]
     fn resilient_alias_builds_with_fallback_chain() {
-        use zeroclaw_config::schema::{Config, ModelProviderConfig, OpenAIModelProviderConfig};
+        use zeroclaw_config::schema::{Config, GroqModelProviderConfig, ModelProviderConfig};
 
         let mut config = Config::default();
-        config.providers.models.openai.insert(
+        config.providers.models.groq.insert(
             "primary".to_string(),
-            OpenAIModelProviderConfig {
+            GroqModelProviderConfig {
                 base: ModelProviderConfig {
-                    model: Some("gpt-4o".to_string()),
-                    fallback_models: vec!["gpt-4o-mini".to_string()],
+                    model: Some("llama-3.3-70b-versatile".to_string()),
+                    fallback_models: vec!["llama-3.1-8b-instant".to_string()],
                     fallback: vec![zeroclaw_config::providers::ModelProviderRef::new(
-                        "openai.backup",
+                        "groq.backup",
                     )],
                     ..Default::default()
                 },
             },
         );
-        config.providers.models.openai.insert(
+        config.providers.models.groq.insert(
             "backup".to_string(),
-            OpenAIModelProviderConfig {
+            GroqModelProviderConfig {
                 base: ModelProviderConfig {
-                    model: Some("gpt-4.1".to_string()),
+                    model: Some("llama-3.1-8b-instant".to_string()),
                     ..Default::default()
                 },
             },
@@ -3684,7 +3705,7 @@ mod tests {
         let reliability = zeroclaw_config::schema::ReliabilityConfig::default();
         let result = create_resilient_model_provider_for_alias(
             &config,
-            "openai",
+            "groq",
             "primary",
             None,
             None,
@@ -3700,16 +3721,16 @@ mod tests {
 
     #[test]
     fn resilient_alias_dangling_fallback_does_not_abort_build() {
-        use zeroclaw_config::schema::{Config, ModelProviderConfig, OpenAIModelProviderConfig};
+        use zeroclaw_config::schema::{Config, GroqModelProviderConfig, ModelProviderConfig};
 
         let mut config = Config::default();
-        config.providers.models.openai.insert(
+        config.providers.models.groq.insert(
             "primary".to_string(),
-            OpenAIModelProviderConfig {
+            GroqModelProviderConfig {
                 base: ModelProviderConfig {
-                    model: Some("gpt-4o".to_string()),
+                    model: Some("llama-3.3-70b-versatile".to_string()),
                     fallback: vec![zeroclaw_config::providers::ModelProviderRef::new(
-                        "openai.ghost",
+                        "groq.ghost",
                     )],
                     ..Default::default()
                 },
@@ -3718,7 +3739,7 @@ mod tests {
 
         let result = create_resilient_model_provider_for_alias(
             &config,
-            "openai",
+            "groq",
             "primary",
             None,
             None,
@@ -3733,29 +3754,25 @@ mod tests {
 
     #[test]
     fn resilient_alias_cyclic_fallback_does_not_loop_or_abort() {
-        use zeroclaw_config::schema::{Config, ModelProviderConfig, OpenAIModelProviderConfig};
+        use zeroclaw_config::schema::{Config, GroqModelProviderConfig, ModelProviderConfig};
 
         let mut config = Config::default();
-        config.providers.models.openai.insert(
+        config.providers.models.groq.insert(
             "a".to_string(),
-            OpenAIModelProviderConfig {
+            GroqModelProviderConfig {
                 base: ModelProviderConfig {
-                    model: Some("gpt-4o".to_string()),
-                    fallback: vec![zeroclaw_config::providers::ModelProviderRef::new(
-                        "openai.b",
-                    )],
+                    model: Some("llama-3.3-70b-versatile".to_string()),
+                    fallback: vec![zeroclaw_config::providers::ModelProviderRef::new("groq.b")],
                     ..Default::default()
                 },
             },
         );
-        config.providers.models.openai.insert(
+        config.providers.models.groq.insert(
             "b".to_string(),
-            OpenAIModelProviderConfig {
+            GroqModelProviderConfig {
                 base: ModelProviderConfig {
-                    model: Some("gpt-4.1".to_string()),
-                    fallback: vec![zeroclaw_config::providers::ModelProviderRef::new(
-                        "openai.a",
-                    )],
+                    model: Some("llama-3.1-8b-instant".to_string()),
+                    fallback: vec![zeroclaw_config::providers::ModelProviderRef::new("groq.a")],
                     ..Default::default()
                 },
             },
@@ -3763,7 +3780,7 @@ mod tests {
 
         let result = create_resilient_model_provider_for_alias(
             &config,
-            "openai",
+            "groq",
             "a",
             None,
             None,
@@ -3778,24 +3795,24 @@ mod tests {
 
     #[test]
     fn resilient_alias_deep_acyclic_fallback_does_not_overflow() {
-        use zeroclaw_config::schema::{Config, ModelProviderConfig, OpenAIModelProviderConfig};
+        use zeroclaw_config::schema::{Config, GroqModelProviderConfig, ModelProviderConfig};
 
         let mut config = Config::default();
         let n = zeroclaw_config::providers::MAX_FALLBACK_DEPTH + 50;
         for i in 0..n {
             let fallback = if i + 1 < n {
                 vec![zeroclaw_config::providers::ModelProviderRef::new(format!(
-                    "openai.a{}",
+                    "groq.a{}",
                     i + 1
                 ))]
             } else {
                 vec![]
             };
-            config.providers.models.openai.insert(
+            config.providers.models.groq.insert(
                 format!("a{i}"),
-                OpenAIModelProviderConfig {
+                GroqModelProviderConfig {
                     base: ModelProviderConfig {
-                        model: Some("gpt-4o".to_string()),
+                        model: Some("llama-3.3-70b-versatile".to_string()),
                         fallback,
                         ..Default::default()
                     },
@@ -3805,7 +3822,7 @@ mod tests {
 
         let result = create_resilient_model_provider_for_alias(
             &config,
-            "openai",
+            "groq",
             "a0",
             None,
             None,
