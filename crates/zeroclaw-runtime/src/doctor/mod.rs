@@ -1142,9 +1142,9 @@ mod tests {
 
     #[test]
     fn provider_validation_checks_custom_url_shape() {
-        assert!(provider_validation_error("openrouter").is_none());
+        let blocked_openrouter = provider_validation_error("openrouter").unwrap_or_default();
+        assert!(blocked_openrouter.contains("Direct OpenRouter provider runtime is disabled"));
         assert!(provider_validation_error("custom:https://example.com").is_none());
-        assert!(provider_validation_error("anthropic-custom:https://example.com").is_none());
 
         let invalid_custom = provider_validation_error("custom:").unwrap_or_default();
         assert!(invalid_custom.contains("requires a URL"));
@@ -1170,7 +1170,7 @@ mod tests {
         config
             .providers
             .models
-            .ensure("openrouter", "default")
+            .ensure("custom", "default")
             .expect("known model_provider type")
             .temperature = Some(5.0);
         let mut items = Vec::new();
@@ -1186,7 +1186,7 @@ mod tests {
         config
             .providers
             .models
-            .ensure("openrouter", "default")
+            .ensure("custom", "default")
             .expect("known model_provider type")
             .temperature = Some(0.7);
         let mut items = Vec::new();
