@@ -47,6 +47,8 @@ cd zeroclaw
 
 The installer asks whether you want a prebuilt binary (fast, ~seconds) or a source build (slower, customisable). Both end the same way — `zeroclaw quickstart` kicks off automatically.
 
+The EugOT fork also builds `zrc` as a short, collision-free alias for the same CLI entry point. Existing `zeroclaw` invocations continue to work.
+
 Flags:
 
 ```
@@ -64,6 +66,7 @@ Platform-specific notes: [Linux](docs/book/src/setup/linux.md) · [macOS](docs/b
 
 ```bash
 zeroclaw quickstart               # one-shot setup: pick a provider, write a working config
+zrc quickstart                    # same CLI via the EugOT short alias
 zeroclaw agent -a <alias>         # interactive chat using the [agents.<alias>] entry
 zeroclaw service install          # register as systemd/launchctl/Windows Service
 zeroclaw service start            # run it always-on in the background

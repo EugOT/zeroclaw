@@ -52,6 +52,9 @@
             rustToolchain
             pkgs.rust-analyzer
           ];
+          buildInputs = pkgs.lib.optionals pkgs.stdenv.isDarwin [
+            pkgs.libiconv
+          ];
         };
       }) // {
       nixosConfigurations = {
