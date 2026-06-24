@@ -30,7 +30,7 @@ fn is_forbidden_provider_env(name: &str) -> bool {
         || upper.starts_with("GOOGLE_VERTEX_")
 }
 
-/// Delegates coding tasks to the Antigravity CLI (`agy chat`).
+/// Delegates coding tasks to the Antigravity CLI (`agy -p`).
 ///
 /// This creates a two-tier agent architecture: ZeroClaw orchestrates high-level
 /// tasks and delegates Gemini-family work to Antigravity, which owns its own
@@ -56,7 +56,7 @@ impl Tool for GeminiCliTool {
     }
 
     fn description(&self) -> &str {
-        "Delegate a coding task to Antigravity CLI (agy chat). Supports Gemini-family work through the approved Antigravity runtime path."
+        "Delegate a coding task to Antigravity CLI (agy -p). Supports Gemini-family work through the approved Antigravity runtime path."
     }
 
     fn parameters_schema(&self) -> serde_json::Value {
@@ -160,7 +160,7 @@ impl Tool for GeminiCliTool {
             "agy"
         };
         let mut cmd = Command::new(antigravity_bin);
-        cmd.arg("chat").arg(prompt);
+        cmd.arg("-p").arg(prompt);
 
         // Environment: clear everything, pass only safe vars + configured passthrough.
         cmd.env_clear();

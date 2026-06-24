@@ -16,7 +16,17 @@ const SAFE_ENV_VARS: &[&str] = &[
 fn is_forbidden_provider_env(name: &str) -> bool {
     matches!(
         name.trim().to_ascii_uppercase().as_str(),
-        "ANTHROPIC_API_KEY" | "ANTHROPIC_BASE_URL" | "CLAUDE_API_KEY" | "CLAUDE_BASE_URL"
+        "ANTHROPIC_API_KEY"
+            | "ANTHROPIC_AUTH_TOKEN"
+            | "ANTHROPIC_BASE_URL"
+            | "ANTHROPIC_AWS_API_KEY"
+            | "ANTHROPIC_AWS_BASE_URL"
+            | "ANTHROPIC_VERTEX_BASE_URL"
+            | "ANTHROPIC_FOUNDRY_API_KEY"
+            | "ANTHROPIC_FOUNDRY_BASE_URL"
+            | "ANTHROPIC_BEDROCK_BASE_URL"
+            | "CLAUDE_API_KEY"
+            | "CLAUDE_BASE_URL"
     )
 }
 
@@ -463,6 +473,21 @@ mod tests {
             .expect("policy rejection should return a result");
         assert!(!result.success);
         assert!(result.error.as_deref().unwrap_or("").contains("blocked"));
+    }
+
+    #[test]
+    fn claude_code_blocks_anthropic_auth_env_names() {
+        for name in [
+            "ANTHROPIC_API_KEY",
+            "ANTHROPIC_AUTH_TOKEN",
+            "ANTHROPIC_AWS_API_KEY",
+            "ANTHROPIC_VERTEX_BASE_URL",
+            "ANTHROPIC_FOUNDRY_API_KEY",
+            "ANTHROPIC_BEDROCK_BASE_URL",
+        ] {
+            assert!(is_forbidden_provider_env(name), "{name} must be blocked");
+        }
+        assert!(!is_forbidden_provider_env("PATH"));
     }
 
     #[test]
