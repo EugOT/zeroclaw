@@ -24,11 +24,13 @@ Default to a middle ground — brief explanation of what you're about to do, the
 Before running any ZeroClaw operation, make sure you know where things are:
 
 1. **Find the binary.** Search in this order:
+   - `which zrc` (PATH) — preferred for the EugOT fork because it avoids collisions with unrelated `zeroclaw` packages
    - `which zeroclaw` (PATH)
+   - The current project's alias build output: `./target/release/zrc` or `./target/debug/zrc`
    - The current project's build output: `./target/release/zeroclaw` or `./target/debug/zeroclaw` — this is the right choice when the user is working inside the ZeroClaw source tree and may have local changes
-   - Common install locations: `~/.cargo/bin/zeroclaw`, `~/Downloads/zeroclaw-bin/zeroclaw`
+   - Common install locations: `~/.cargo/bin/zrc`, `~/.cargo/bin/zeroclaw`, `~/Downloads/zeroclaw-bin/zrc`, `~/Downloads/zeroclaw-bin/zeroclaw`
 
-   If no binary is found anywhere, offer to build from source (see "Building from Source" below). If the user is a developer working on ZeroClaw itself, they'll likely want the local build — watch for cues like them editing source files, mentioning PRs, or being in the project directory.
+   Use the discovered binary consistently for later commands in the same session. If `zeroclaw` and `zrc` both exist but point to different installs, prefer `zrc` for the EugOT fork and report the collision before running stateful commands. If no binary is found anywhere, offer to build from source (see "Building from Source" below). If the user is a developer working on ZeroClaw itself, they'll likely want the local build — watch for cues like them editing source files, mentioning PRs, or being in the project directory.
 
 2. **Check if the gateway is running** (only needed for REST/WebSocket operations). A quick `curl -sf http://127.0.0.1:42617/health` tells you. If it's not running and the user wants REST access, let them know and offer to start it (`zeroclaw gateway` or `zeroclaw daemon`).
 
