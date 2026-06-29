@@ -201,6 +201,16 @@ impl Tool for ClaudeCodeTool {
         cmd.arg("-p").arg(prompt);
         cmd.arg("--output-format").arg("json");
 
+        let model = self.config.model.trim();
+        if !model.is_empty() {
+            cmd.arg("--model").arg(model);
+        }
+
+        let effort = self.config.effort.trim();
+        if !effort.is_empty() {
+            cmd.arg("--effort").arg(effort);
+        }
+
         if !allowed_tools.is_empty() {
             for tool in &allowed_tools {
                 cmd.arg("--allowedTools").arg(tool);
@@ -498,5 +508,7 @@ mod tests {
         assert_eq!(config.max_output_bytes, 2_097_152);
         assert!(config.system_prompt.is_none());
         assert_eq!(config.allowed_tools, vec!["Read", "Edit", "Bash", "Write"]);
+        assert_eq!(config.model, "claude-opus-4-8");
+        assert_eq!(config.effort, "xhigh");
     }
 }

@@ -37,6 +37,14 @@ impl CodexCliTool {
     pub fn new(security: Arc<SecurityPolicy>, config: CodexCliConfig) -> Self {
         Self { security, config }
     }
+
+    fn reasoning_config_arg(reasoning_effort: &str) -> Option<String> {
+        let effort = reasoning_effort.trim();
+        if effort.is_empty() {
+            return None;
+        }
+        Some(format!("model_reasoning_effort=\"{effort}\""))
+    }
 }
 
 #[async_trait]
@@ -151,6 +159,15 @@ impl Tool for CodexCliTool {
         };
         let mut cmd = Command::new(codex_bin);
         cmd.arg("exec");
+
+        let model = self.config.model.trim();
+        if !model.is_empty() {
+            cmd.arg("-m").arg(model);
+        }
+
+        if let Some(reasoning_arg) = Self::reasoning_config_arg(&self.config.reasoning_effort) {
+            cmd.arg("-c").arg(reasoning_arg);
+        }
 
         // Append user-configured extra arguments (e.g. --sandbox, --skip-git-repo-check)
         for arg in &self.config.extra_args {
@@ -386,10 +403,21 @@ mod tests {
     }
 
     #[test]
+    fn codex_cli_reasoning_config_arg_quotes_medium() {
+        assert_eq!(
+            CodexCliTool::reasoning_config_arg("medium").as_deref(),
+            Some("model_reasoning_effort=\"medium\"")
+        );
+        assert!(CodexCliTool::reasoning_config_arg("   ").is_none());
+    }
+
+    #[test]
     fn codex_cli_default_config_values() {
         let config = CodexCliConfig::default();
         assert!(!config.enabled);
         assert_eq!(config.timeout_secs, 600);
         assert_eq!(config.max_output_bytes, 2_097_152);
+        assert_eq!(config.model, "gpt-5.5");
+        assert_eq!(config.reasoning_effort, "medium");
     }
 }

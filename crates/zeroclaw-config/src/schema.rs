@@ -7630,8 +7630,8 @@ impl Default for FileDownloadConfig {
 /// Claude Code CLI tool configuration (`[claude_code]` section).
 ///
 /// Delegates coding tasks to the `claude -p` CLI. Authentication uses the
-/// binary's own OAuth session (Max subscription) by default — no API key
-/// needed unless `env_passthrough` includes `ANTHROPIC_API_KEY`.
+/// binary's own OAuth session by default. Direct Anthropic API-key passthrough
+/// is blocked by the runtime-policy gate.
 #[derive(Debug, Clone, Serialize, Deserialize, Configurable)]
 #[cfg_attr(feature = "schema-export", derive(schemars::JsonSchema))]
 #[prefix = "claude_code"]
@@ -7655,6 +7655,12 @@ pub struct ClaudeCodeConfig {
     #[serde(default)]
     #[credential_class = "legacy_env_path"]
     pub env_passthrough: Vec<String>,
+    /// Claude Code model passed as `claude -p --model <model>`.
+    #[serde(default = "default_claude_code_model")]
+    pub model: String,
+    /// Claude Code reasoning effort passed as `claude -p --effort <effort>`.
+    #[serde(default = "default_claude_code_effort")]
+    pub effort: String,
 }
 
 fn default_claude_code_timeout_secs() -> u64 {
@@ -7669,6 +7675,14 @@ fn default_claude_code_max_output_bytes() -> usize {
     2_097_152
 }
 
+fn default_claude_code_model() -> String {
+    "claude-opus-4-8".into()
+}
+
+fn default_claude_code_effort() -> String {
+    "xhigh".into()
+}
+
 impl Default for ClaudeCodeConfig {
     fn default() -> Self {
         Self {
@@ -7678,6 +7692,8 @@ impl Default for ClaudeCodeConfig {
             system_prompt: None,
             max_output_bytes: default_claude_code_max_output_bytes(),
             env_passthrough: Vec::new(),
+            model: default_claude_code_model(),
+            effort: default_claude_code_effort(),
         }
     }
 }
@@ -7731,8 +7747,8 @@ impl Default for ClaudeCodeRunnerConfig {
 /// Codex CLI tool configuration (`[codex_cli]` section).
 ///
 /// Delegates coding tasks to the `codex exec` CLI. Authentication uses the
-/// binary's own session by default — no API key needed unless
-/// `env_passthrough` includes `OPENAI_API_KEY`.
+/// binary's own approved session by default. Direct OpenAI API-key passthrough
+/// is blocked by the runtime-policy gate.
 #[derive(Debug, Clone, Serialize, Deserialize, Configurable)]
 #[cfg_attr(feature = "schema-export", derive(schemars::JsonSchema))]
 #[prefix = "codex_cli"]
@@ -7750,6 +7766,12 @@ pub struct CodexCliConfig {
     #[serde(default)]
     #[credential_class = "legacy_env_path"]
     pub env_passthrough: Vec<String>,
+    /// Codex model passed as `codex exec -m <model>`.
+    #[serde(default = "default_codex_cli_model")]
+    pub model: String,
+    /// Reasoning effort passed via `codex exec -c model_reasoning_effort="..."`.
+    #[serde(default = "default_codex_cli_reasoning_effort")]
+    pub reasoning_effort: String,
     /// Extra CLI arguments appended to `codex exec` before the prompt.
     ///
     /// Values come from operator-controlled config (same trust level as
@@ -7773,6 +7795,14 @@ fn default_codex_cli_max_output_bytes() -> usize {
     2_097_152
 }
 
+fn default_codex_cli_model() -> String {
+    "gpt-5.5".into()
+}
+
+fn default_codex_cli_reasoning_effort() -> String {
+    "medium".into()
+}
+
 impl Default for CodexCliConfig {
     fn default() -> Self {
         Self {
@@ -7780,6 +7810,8 @@ impl Default for CodexCliConfig {
             timeout_secs: default_codex_cli_timeout_secs(),
             max_output_bytes: default_codex_cli_max_output_bytes(),
             env_passthrough: Vec::new(),
+            model: default_codex_cli_model(),
+            reasoning_effort: default_codex_cli_reasoning_effort(),
             extra_args: Vec::new(),
         }
     }
@@ -21473,7 +21505,7 @@ default_temperature = 0.7
         let raw = r#"
 default_temperature = 0.7
 model_provider = "openai"
-model = "gpt-5.3-codex"
+model = "gpt-5.5"
 
 [model_providers.openai]
 api_key = "sk-test"
@@ -21497,7 +21529,7 @@ requires_openai_auth = true
             .expect("openai.default entry");
         assert_eq!(profile.api_key.as_deref(), Some("sk-test"));
         assert_eq!(profile.uri.as_deref(), Some("https://api.openai.com/v1"));
-        assert_eq!(profile.model.as_deref(), Some("gpt-5.3-codex"));
+        assert_eq!(profile.model.as_deref(), Some("gpt-5.5"));
         assert_eq!(profile.wire_api, Some(WireApi::Responses));
         assert!(profile.requires_openai_auth);
     }
