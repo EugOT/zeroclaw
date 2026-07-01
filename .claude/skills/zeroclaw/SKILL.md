@@ -24,8 +24,8 @@ Default to a middle ground — brief explanation of what you're about to do, the
 Before running any ZeroClaw operation, make sure you know where things are:
 
 1. **Find the binaries.** Probe both PATH installs before choosing a session binary, so collisions are visible up front:
-   - `which zrc` (PATH)
-   - `which zeroclaw` (PATH)
+   - `command -v zrc` (PATH)
+   - `command -v zeroclaw` (PATH)
    - The current project's alias build output: `./target/release/zrc` or `./target/debug/zrc`
    - The current project's build output: `./target/release/zeroclaw` or `./target/debug/zeroclaw` — this is the right choice when the user is working inside the ZeroClaw source tree and may have local changes
    - Common install locations: `~/.cargo/bin/zrc`, `~/.cargo/bin/zeroclaw`, `~/Downloads/zeroclaw-bin/zrc`, `~/Downloads/zeroclaw-bin/zeroclaw`
