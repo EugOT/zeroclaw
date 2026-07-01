@@ -32,7 +32,7 @@ Before running any ZeroClaw operation, make sure you know where things are:
 
    Use the discovered binary consistently for later commands in the same session. Store it as `ZC=/path/to/zrc` or `ZC=/path/to/zeroclaw` in examples and replace every `$ZC` below with that same resolved path. If `zeroclaw` and `zrc` both exist but point to different installs, prefer `zrc` for the EugOT fork and report the collision before running stateful commands. If no binary is found anywhere, offer to build from source (see "Building from Source" below). If the user is a developer working on ZeroClaw itself, they'll likely want the local build — watch for cues like them editing source files, mentioning PRs, or being in the project directory.
 
-   In the normal EugOT fork path this means examples resolve to `zrc`, for example `ZC="$(command -v zrc)"` followed by `"$ZC" status` or `zrc quickstart`. Keep `zeroclaw` as the fallback only when `zrc` is absent.
+   In the normal EugOT fork path this means examples resolve to `zrc`, for example `ZC="$(command -v zrc)"` followed by `"$ZC" status` or `"$ZC" quickstart`. Keep `zeroclaw` as the fallback only when `zrc` is absent, and do not switch back to bare `zeroclaw` after `zrc` has been selected.
 
 2. **Check if the gateway is running** (only needed for REST/WebSocket operations). A quick `curl -sf http://127.0.0.1:42617/health` tells you. If it's not running and the user wants REST access, let them know and offer to start it (`$ZC gateway` or `$ZC daemon`).
 

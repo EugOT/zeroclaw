@@ -211,12 +211,13 @@ pub async fn run(target_version: Option<&str>) -> Result<()> {
                 }
                 .await
                 {
-                    rollback_binary(&backup_path, &current_exe)
-                        .await
-                        .context("rollback after alias sync failure")?;
-                    rollback_optional_binary(alias, alias_backup_path.as_deref())
-                        .await
-                        .context("rollback alias after alias sync failure")?;
+                    rollback_binary_pair(
+                        &backup_path,
+                        &current_exe,
+                        Some((alias, alias_backup_path.as_deref())),
+                    )
+                    .await
+                    .context("rollback after alias sync failure")?;
                     bail!("Update rolled back — alias sync failed: {e}");
                 }
             }
@@ -240,11 +241,6 @@ pub async fn run(target_version: Option<&str>) -> Result<()> {
             rollback_binary(&backup_path, &current_exe)
                 .await
                 .context("rollback after smoke test failure")?;
-            if let Some(alias) = alias_exe.as_deref() {
-                rollback_optional_binary(alias, alias_backup_path.as_deref())
-                    .await
-                    .context("rollback alias after smoke test failure")?;
-            }
             bail!("Update rolled back — smoke test failed: {e}");
         }
     }
@@ -685,6 +681,28 @@ async fn rollback_optional_binary(target: &Path, backup: Option<&Path>) -> Resul
     }
 }
 
+async fn rollback_binary_pair(
+    backup: &Path,
+    target: &Path,
+    alias: Option<(&Path, Option<&Path>)>,
+) -> Result<()> {
+    let main_result = rollback_binary(backup, target).await;
+    let alias_result = if let Some((alias_target, alias_backup)) = alias {
+        rollback_optional_binary(alias_target, alias_backup).await
+    } else {
+        Ok(())
+    };
+
+    match (main_result, alias_result) {
+        (Ok(()), Ok(())) => Ok(()),
+        (Err(main_err), Ok(())) => Err(main_err).context("failed to rollback main binary"),
+        (Ok(()), Err(alias_err)) => Err(alias_err).context("failed to rollback alias binary"),
+        (Err(main_err), Err(alias_err)) => Err(main_err).context(format!(
+            "failed to rollback main binary; alias rollback also failed: {alias_err}"
+        )),
+    }
+}
+
 async fn smoke_test(binary: &Path) -> Result<()> {
     let output = tokio::process::Command::new(binary)
         .arg("--version")
@@ -756,6 +774,34 @@ mod tests {
             PathBuf::from("/tmp/zrc.exe")
         );
         assert!(sibling_alias_path(Path::new("/usr/local/bin/other")).is_none());
+    }
+
+    #[tokio::test]
+    async fn rollback_binary_pair_attempts_alias_after_main_failure() {
+        let tmp = tempfile::tempdir().unwrap();
+        let missing_main_backup = tmp.path().join("zeroclaw.bak");
+        let current = tmp.path().join("zeroclaw");
+        let alias = tmp.path().join("zrc");
+        let alias_backup = tmp.path().join("zrc.bak");
+
+        std::fs::write(&current, b"new-main").unwrap();
+        std::fs::write(&alias, b"new-alias").unwrap();
+        std::fs::write(&alias_backup, b"old-alias").unwrap();
+
+        let err = rollback_binary_pair(
+            &missing_main_backup,
+            &current,
+            Some((&alias, Some(alias_backup.as_path()))),
+        )
+        .await
+        .unwrap_err()
+        .to_string();
+
+        assert!(
+            err.contains("failed to rollback main binary"),
+            "unexpected rollback error: {err}"
+        );
+        assert_eq!(std::fs::read(&alias).unwrap(), b"old-alias");
     }
 
     fn make_release(assets: &[&str]) -> serde_json::Value {

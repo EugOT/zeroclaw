@@ -56,7 +56,7 @@ Flags:
 ./install.sh --source                # always build from source
 ./install.sh --minimal               # kernel only (~6.6 MB)
 ./install.sh --source --features agent-runtime,channel-discord  # custom feature set
-./install.sh --skip-quickstart       # install only, run `zeroclaw quickstart` later
+./install.sh --skip-quickstart       # install only, run `zrc quickstart` later in the EugOT fork
 ./install.sh --list-features         # print available feature flags
 ```
 
