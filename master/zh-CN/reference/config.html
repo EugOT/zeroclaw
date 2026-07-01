@@ -37,7 +37,7 @@
             const path_to_root = "../";
             const default_light_theme = "default-dark";
             const default_dark_theme = "default-dark";
-            window.path_to_searchindex_js = "../searchindex-0ee61a64.js";
+            window.path_to_searchindex_js = "../searchindex-389ab10f.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-9364d956.js"></script>
@@ -532,7 +532,7 @@
 </div>
 <h2 id="claude_code"><a class="header" href="#claude_code"><code>claude_code</code></a></h2>
 <p>Claude Code CLI 工具配置（<code>[claude_code]</code> 部分）。</p>
-<p>将编码任务委派给 <code>claude -p</code> CLI。默认情况下，身份验证使用二进制文件自身的 OAuth 会话（Max 订阅）——除非 <code>env_passthrough</code> 包含 <code>ANTHROPIC_API_KEY</code>，否则无需 API 密钥。</p>
+<p>Delegates coding tasks to the <code>claude -p</code> CLI. Authentication uses the binary’s own OAuth session by default. Direct Anthropic API-key passthrough is blocked by the runtime-policy gate.</p>
 <div class="table-wrapper">
 <table>
 <thead>
@@ -540,9 +540,11 @@
 </thead>
 <tbody>
 <tr><td><code>allowed_tools</code></td><td>字符串数组</td><td><code>["读取","编辑","Bash","写入"]</code></td><td>Claude Code 工具中子进程允许使用的内容</td></tr>
+<tr><td><code>effort</code></td><td>字符串</td><td><code>"xhigh"</code></td><td>Claude Code reasoning effort passed as <code>claude -p --effort &lt;effort&gt;</code>.</td></tr>
 <tr><td><code>enabled</code></td><td>布尔</td><td><code>false</code></td><td>启用 <code>claude_code</code> 工具</td></tr>
 <tr><td><code>env_passthrough</code></td><td>字符串数组</td><td><code>[]</code></td><td>传递给 claude 子进程的环境变量（例如，用于 API 密钥计费的 ANTHROPIC_API_KEY）</td></tr>
 <tr><td><code>max_output_bytes</code></td><td>整数</td><td><code>2097152</code></td><td>最大输出大小（以字节为单位，默认值为 2MB）</td></tr>
+<tr><td><code>model</code></td><td>字符串</td><td><code>"claude-opus-4-8"</code></td><td>Claude Code model passed as <code>claude -p --model &lt;model&gt;</code>.</td></tr>
 <tr><td><code>system_prompt</code></td><td>字符串？</td><td><code>null</code></td><td>附加到 Claude Code 调用的可选系统提示</td></tr>
 <tr><td><code>timeout_secs</code></td><td>整数</td><td><code>600</code></td><td>最大执行时间（秒）（编码任务可能耗时较长）</td></tr>
 </tbody>
@@ -583,7 +585,7 @@
 </div>
 <h2 id="codex_cli"><a class="header" href="#codex_cli"><code>codex_cli</code></a></h2>
 <p>Codex CLI 工具配置（<code>[codex_cli]</code> 部分）。</p>
-<p>将编码任务委派给 <code>codex exec</code> CLI。默认使用该二进制文件自身的会话进行身份验证——除非 <code>env_passthrough</code> 包含 <code>OPENAI_API_KEY</code>，否则无需 API 密钥。</p>
+<p>Delegates coding tasks to the <code>codex exec</code> CLI. Authentication uses the binary’s own approved session by default. Direct OpenAI API-key passthrough is blocked by the runtime-policy gate.</p>
 <div class="table-wrapper">
 <table>
 <thead>
@@ -594,6 +596,8 @@
 <tr><td><code>env_passthrough</code></td><td>字符串数组</td><td><code>[]</code></td><td>传递给 codex 子进程的其他环境变量（例如 OPENAI_API_KEY）</td></tr>
 <tr><td><code>extra_args</code></td><td>字符串数组</td><td><code>[]</code></td><td>在提示词之前追加到 <code>codex exec</code> 的额外 CLI 参数。</td></tr>
 <tr><td><code>max_output_bytes</code></td><td>整数</td><td><code>2097152</code></td><td>最大输出大小（以字节为单位，默认值为 2MB）</td></tr>
+<tr><td><code>model</code></td><td>字符串</td><td><code>"gpt-5.5"</code></td><td>Codex model passed as <code>codex exec -m &lt;model&gt;</code>.</td></tr>
+<tr><td><code>reasoning_effort</code></td><td>字符串</td><td><code>"medium"</code></td><td>Reasoning effort passed via <code>codex exec -c model_reasoning_effort="..."</code>.</td></tr>
 <tr><td><code>timeout_secs</code></td><td>整数</td><td><code>600</code></td><td>最大执行时间（秒）（编码任务可能耗时较长）</td></tr>
 </tbody>
 </table>

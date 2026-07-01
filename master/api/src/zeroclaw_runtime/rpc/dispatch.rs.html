@@ -3643,8 +3643,8 @@ data-theme="ayu"></script><meta name="rustdoc-vars" data-root-path="../../../" d
 <a href=#3641 id=3641 data-nosnippet>3641</a>        {
 <a href=#3642 id=3642 data-nosnippet>3642</a>            <span class="kw">let </span>base = providers
 <a href=#3643 id=3643 data-nosnippet>3643</a>                .models
-<a href=#3644 id=3644 data-nosnippet>3644</a>                .ensure(<span class="string">"openai"</span>, <span class="string">"test-provider"</span>)
-<a href=#3645 id=3645 data-nosnippet>3645</a>                .expect(<span class="string">"`openai` slot must exist"</span>);
+<a href=#3644 id=3644 data-nosnippet>3644</a>                .ensure(<span class="string">"custom"</span>, <span class="string">"test-provider"</span>)
+<a href=#3645 id=3645 data-nosnippet>3645</a>                .expect(<span class="string">"`custom` slot must exist"</span>);
 <a href=#3646 id=3646 data-nosnippet>3646</a>            base.api_key = <span class="prelude-val">Some</span>(<span class="string">"test-key"</span>.into());
 <a href=#3647 id=3647 data-nosnippet>3647</a>            base.model = <span class="prelude-val">Some</span>(<span class="string">"test-model"</span>.into());
 <a href=#3648 id=3648 data-nosnippet>3648</a>            base.uri = <span class="prelude-val">Some</span>(<span class="string">"http://127.0.0.1:1"</span>.into());
@@ -3655,7 +3655,7 @@ data-theme="ayu"></script><meta name="rustdoc-vars" data-root-path="../../../" d
 <a href=#3653 id=3653 data-nosnippet>3653</a>            <span class="string">"test-agent"</span>.to_string(),
 <a href=#3654 id=3654 data-nosnippet>3654</a>            AliasedAgentConfig {
 <a href=#3655 id=3655 data-nosnippet>3655</a>                enabled: <span class="bool-val">true</span>,
-<a href=#3656 id=3656 data-nosnippet>3656</a>                model_provider: <span class="string">"openai.test-provider"</span>.into(),
+<a href=#3656 id=3656 data-nosnippet>3656</a>                model_provider: <span class="string">"custom.test-provider"</span>.into(),
 <a href=#3657 id=3657 data-nosnippet>3657</a>                risk_profile: <span class="string">"test-profile"</span>.to_string(),
 <a href=#3658 id=3658 data-nosnippet>3658</a>                ..Default::default()
 <a href=#3659 id=3659 data-nosnippet>3659</a>            },
@@ -4396,8 +4396,8 @@ data-theme="ayu"></script><meta name="rustdoc-vars" data-root-path="../../../" d
 <a href=#4394 id=4394 data-nosnippet>4394</a>        <span class="kw">let </span>provider = config
 <a href=#4395 id=4395 data-nosnippet>4395</a>            .providers
 <a href=#4396 id=4396 data-nosnippet>4396</a>            .models
-<a href=#4397 id=4397 data-nosnippet>4397</a>            .ensure(<span class="string">"openai"</span>, <span class="string">"test-provider"</span>)
-<a href=#4398 id=4398 data-nosnippet>4398</a>            .expect(<span class="string">"openai provider slot exists"</span>);
+<a href=#4397 id=4397 data-nosnippet>4397</a>            .ensure(<span class="string">"custom"</span>, <span class="string">"test-provider"</span>)
+<a href=#4398 id=4398 data-nosnippet>4398</a>            .expect(<span class="string">"custom provider slot exists"</span>);
 <a href=#4399 id=4399 data-nosnippet>4399</a>        provider.api_key = <span class="prelude-val">Some</span>(<span class="string">"test-key"</span>.into());
 <a href=#4400 id=4400 data-nosnippet>4400</a>        provider.uri = <span class="prelude-val">Some</span>(<span class="string">"http://127.0.0.1:1"</span>.into());
 <a href=#4401 id=4401 data-nosnippet>4401</a>        provider.model = <span class="prelude-val">Some</span>(<span class="string">"old-model"</span>.into());
@@ -4407,7 +4407,7 @@ data-theme="ayu"></script><meta name="rustdoc-vars" data-root-path="../../../" d
 <a href=#4405 id=4405 data-nosnippet>4405</a>            <span class="string">"test-agent"</span>.to_string(),
 <a href=#4406 id=4406 data-nosnippet>4406</a>            AliasedAgentConfig {
 <a href=#4407 id=4407 data-nosnippet>4407</a>                enabled: <span class="bool-val">true</span>,
-<a href=#4408 id=4408 data-nosnippet>4408</a>                model_provider: <span class="string">"openai.test-provider"</span>.into(),
+<a href=#4408 id=4408 data-nosnippet>4408</a>                model_provider: <span class="string">"custom.test-provider"</span>.into(),
 <a href=#4409 id=4409 data-nosnippet>4409</a>                risk_profile: <span class="string">"test-profile"</span>.into(),
 <a href=#4410 id=4410 data-nosnippet>4410</a>                ..Default::default()
 <a href=#4411 id=4411 data-nosnippet>4411</a>            },
@@ -4501,7 +4501,7 @@ data-theme="ayu"></script><meta name="rustdoc-vars" data-root-path="../../../" d
 <a href=#4499 id=4499 data-nosnippet>4499</a>
 <a href=#4500 id=4500 data-nosnippet>4500</a>        <span class="kw">let </span>res = dispatcher
 <a href=#4501 id=4501 data-nosnippet>4501</a>            .handle_config_set(<span class="kw-2">&amp;</span><span class="macro">json!</span>({
-<a href=#4502 id=4502 data-nosnippet>4502</a>                <span class="string">"prop"</span>: <span class="string">"providers.models.openai.test-provider.model"</span>,
+<a href=#4502 id=4502 data-nosnippet>4502</a>                <span class="string">"prop"</span>: <span class="string">"providers.models.custom.test-provider.model"</span>,
 <a href=#4503 id=4503 data-nosnippet>4503</a>                <span class="string">"value"</span>: <span class="string">"new-model"
 <a href=#4504 id=4504 data-nosnippet>4504</a>            </span>}))
 <a href=#4505 id=4505 data-nosnippet>4505</a>            .<span class="kw">await</span>;
@@ -4522,7 +4522,7 @@ data-theme="ayu"></script><meta name="rustdoc-vars" data-root-path="../../../" d
 <a href=#4520 id=4520 data-nosnippet>4520</a>
 <a href=#4521 id=4521 data-nosnippet>4521</a>        <span class="kw">let </span>res = dispatcher
 <a href=#4522 id=4522 data-nosnippet>4522</a>            .handle_config_set(<span class="kw-2">&amp;</span><span class="macro">json!</span>({
-<a href=#4523 id=4523 data-nosnippet>4523</a>                <span class="string">"prop"</span>: <span class="string">"providers.models.openai.test-provider.model"</span>,
+<a href=#4523 id=4523 data-nosnippet>4523</a>                <span class="string">"prop"</span>: <span class="string">"providers.models.custom.test-provider.model"</span>,
 <a href=#4524 id=4524 data-nosnippet>4524</a>                <span class="string">"value"</span>: <span class="string">""
 <a href=#4525 id=4525 data-nosnippet>4525</a>            </span>}))
 <a href=#4526 id=4526 data-nosnippet>4526</a>            .<span class="kw">await</span>;
@@ -4534,7 +4534,7 @@ data-theme="ayu"></script><meta name="rustdoc-vars" data-root-path="../../../" d
 <a href=#4532 id=4532 data-nosnippet>4532</a>        <span class="kw">let </span>stored = cfg
 <a href=#4533 id=4533 data-nosnippet>4533</a>            .providers
 <a href=#4534 id=4534 data-nosnippet>4534</a>            .models
-<a href=#4535 id=4535 data-nosnippet>4535</a>            .openai
+<a href=#4535 id=4535 data-nosnippet>4535</a>            .custom
 <a href=#4536 id=4536 data-nosnippet>4536</a>            .get(<span class="string">"test-provider"</span>)
 <a href=#4537 id=4537 data-nosnippet>4537</a>            .and_then(|e| e.base.model.clone());
 <a href=#4538 id=4538 data-nosnippet>4538</a>        <span class="macro">assert_eq!</span>(
@@ -4560,7 +4560,7 @@ data-theme="ayu"></script><meta name="rustdoc-vars" data-root-path="../../../" d
 <a href=#4558 id=4558 data-nosnippet>4558</a>
 <a href=#4559 id=4559 data-nosnippet>4559</a>        <span class="kw">let </span>res = dispatcher
 <a href=#4560 id=4560 data-nosnippet>4560</a>            .handle_config_set(<span class="kw-2">&amp;</span><span class="macro">json!</span>({
-<a href=#4561 id=4561 data-nosnippet>4561</a>                <span class="string">"prop"</span>: <span class="string">"providers.models.openai.test-provider.temperature"</span>,
+<a href=#4561 id=4561 data-nosnippet>4561</a>                <span class="string">"prop"</span>: <span class="string">"providers.models.custom.test-provider.temperature"</span>,
 <a href=#4562 id=4562 data-nosnippet>4562</a>                <span class="string">"value"</span>: <span class="number">0.4
 <a href=#4563 id=4563 data-nosnippet>4563</a>            </span>}))
 <a href=#4564 id=4564 data-nosnippet>4564</a>            .<span class="kw">await</span>;
@@ -4590,7 +4590,7 @@ data-theme="ayu"></script><meta name="rustdoc-vars" data-root-path="../../../" d
 <a href=#4588 id=4588 data-nosnippet>4588</a>
 <a href=#4589 id=4589 data-nosnippet>4589</a>        <span class="kw">let </span>res = dispatcher
 <a href=#4590 id=4590 data-nosnippet>4590</a>            .handle_config_set(<span class="kw-2">&amp;</span><span class="macro">json!</span>({
-<a href=#4591 id=4591 data-nosnippet>4591</a>                <span class="string">"prop"</span>: <span class="string">"providers.models.openai.test-provider.model"</span>,
+<a href=#4591 id=4591 data-nosnippet>4591</a>                <span class="string">"prop"</span>: <span class="string">"providers.models.custom.test-provider.model"</span>,
 <a href=#4592 id=4592 data-nosnippet>4592</a>                <span class="string">"value"</span>: <span class="string">"new-model"
 <a href=#4593 id=4593 data-nosnippet>4593</a>            </span>}))
 <a href=#4594 id=4594 data-nosnippet>4594</a>            .<span class="kw">await</span>;
@@ -4616,7 +4616,7 @@ data-theme="ayu"></script><meta name="rustdoc-vars" data-root-path="../../../" d
 <a href=#4614 id=4614 data-nosnippet>4614</a>
 <a href=#4615 id=4615 data-nosnippet>4615</a>        <span class="kw">let </span>res = dispatcher
 <a href=#4616 id=4616 data-nosnippet>4616</a>            .handle_config_delete(<span class="kw-2">&amp;</span><span class="macro">json!</span>({
-<a href=#4617 id=4617 data-nosnippet>4617</a>                <span class="string">"prop"</span>: <span class="string">"providers.models.openai.test-provider.temperature"</span>,
+<a href=#4617 id=4617 data-nosnippet>4617</a>                <span class="string">"prop"</span>: <span class="string">"providers.models.custom.test-provider.temperature"</span>,
 <a href=#4618 id=4618 data-nosnippet>4618</a>            }))
 <a href=#4619 id=4619 data-nosnippet>4619</a>            .<span class="kw">await</span>;
 <a href=#4620 id=4620 data-nosnippet>4620</a>        <span class="macro">assert!</span>(res.is_ok(), <span class="string">"config/delete must succeed: {res:?}"</span>);

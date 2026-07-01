@@ -38,7 +38,7 @@
             const path_to_root = "";
             const default_light_theme = "default-dark";
             const default_dark_theme = "default-dark";
-            window.path_to_searchindex_js = "searchindex-97807c4a.js";
+            window.path_to_searchindex_js = "searchindex-19d3b3de.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-8e2df50e.js"></script>
@@ -4477,7 +4477,7 @@ zeroclaw daemon
 </div>
 <h2 id="claude_code"><a class="header" href="#claude_code"><code>claude_code</code></a></h2>
 <p>Claude Code CLIツール設定 (<code>[claude_code]</code> セクション)。</p>
-<p><code>claude -p</code> CLIにコーディングタスクを委譲します。認証はバイナリ独自のOAuthセッション(Max subscription)をデフォルトで使用します — <code>env_passthrough</code>に<code>ANTHROPIC_API_KEY</code>が含まれない限り、APIキーは不要です。</p>
+<p>Delegates coding tasks to the <code>claude -p</code> CLI. Authentication uses the binary’s own OAuth session by default. Direct Anthropic API-key passthrough is blocked by the runtime-policy gate.</p>
 <div class="table-wrapper">
 <table>
 <thead>
@@ -4485,9 +4485,11 @@ zeroclaw daemon
 </thead>
 <tbody>
 <tr><td><code>allowed_tools</code></td><td>string[]</td><td><code>["Read","Edit","Bash","Write"]</code></td><td>サブプロセスが使用を許可されたClaude Codeツール</td></tr>
+<tr><td><code>effort</code></td><td>string</td><td><code>"xhigh"</code></td><td>Claude Code reasoning effort passed as <code>claude -p --effort &lt;effort&gt;</code>.</td></tr>
 <tr><td><code>enabled</code></td><td>ブール値</td><td><code>false</code></td><td><code>claude_code</code>ツールを有効化</td></tr>
 <tr><td><code>env_passthrough</code></td><td>string[]</td><td><code>[]</code></td><td>claudeサブプロセスに渡される追加環境変数(例:APIキー課金用のANTHROPIC_API_KEY)</td></tr>
 <tr><td><code>max_output_bytes</code></td><td>整数</td><td><code>2097152</code></td><td>最大出力サイズ(バイト単位、デフォルト:2MB)</td></tr>
+<tr><td><code>model</code></td><td>string</td><td><code>"claude-opus-4-8"</code></td><td>Claude Code model passed as <code>claude -p --model &lt;model&gt;</code>.</td></tr>
 <tr><td><code>system_prompt</code></td><td>string?</td><td><code>null</code></td><td>Claude Code呼び出しに追加されるオプションのシステムプロンプト</td></tr>
 <tr><td><code>timeout_secs</code></td><td>整数</td><td><code>600</code></td><td>最大実行時間(秒単位、コーディングタスクは長時間になる場合があります)</td></tr>
 </tbody>
@@ -4528,7 +4530,7 @@ zeroclaw daemon
 </div>
 <h2 id="codex_cli"><a class="header" href="#codex_cli"><code>codex_cli</code></a></h2>
 <p>Codex CLIツール設定 (<code>[codex_cli]</code> セクション)。</p>
-<p>コーディングタスクを <code>codex exec</code> CLI に委譲します。認証はデフォルトでバイナリ自身のセッションを使用します。<code>env_passthrough</code> に <code>OPENAI_API_KEY</code> を含めない限り、API キーは不要です。</p>
+<p>Delegates coding tasks to the <code>codex exec</code> CLI. Authentication uses the binary’s own approved session by default. Direct OpenAI API-key passthrough is blocked by the runtime-policy gate.</p>
 <div class="table-wrapper">
 <table>
 <thead>
@@ -4539,6 +4541,8 @@ zeroclaw daemon
 <tr><td><code>env_passthrough</code></td><td>string[]</td><td><code>[]</code></td><td>codexサブプロセスに渡される追加の環境変数（例：OPENAI_API_KEY）</td></tr>
 <tr><td><code>extra_args</code></td><td>string[]</td><td><code>[]</code></td><td>プロンプトの前に <code>codex exec</code> に追加される追加の CLI 引数です。</td></tr>
 <tr><td><code>max_output_bytes</code></td><td>整数</td><td><code>2097152</code></td><td>最大出力サイズ(バイト単位、デフォルト:2MB)</td></tr>
+<tr><td><code>model</code></td><td>string</td><td><code>"gpt-5.5"</code></td><td>Codex model passed as <code>codex exec -m &lt;model&gt;</code>.</td></tr>
+<tr><td><code>reasoning_effort</code></td><td>string</td><td><code>"medium"</code></td><td>Reasoning effort passed via <code>codex exec -c model_reasoning_effort="..."</code>.</td></tr>
 <tr><td><code>timeout_secs</code></td><td>整数</td><td><code>600</code></td><td>最大実行時間(秒単位、コーディングタスクは長時間になる場合があります)</td></tr>
 </tbody>
 </table>
