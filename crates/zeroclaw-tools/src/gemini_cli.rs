@@ -21,6 +21,7 @@ fn is_forbidden_provider_env(name: &str) -> bool {
             | "GEMINI_API_KEY"
             | "GOOGLE_APPLICATION_CREDENTIALS"
             | "GOOGLE_CLOUD_PROJECT"
+            | "GCLOUD_PROJECT"
             | "CLOUDSDK_CORE_PROJECT"
             | "VERTEX_PROJECT"
             | "VERTEX_LOCATION"
@@ -382,6 +383,9 @@ mod tests {
             "GOOGLE_API_KEY",
             "GEMINI_API_KEY",
             "GOOGLE_APPLICATION_CREDENTIALS",
+            "GOOGLE_CLOUD_PROJECT",
+            "GCLOUD_PROJECT",
+            "CLOUDSDK_CORE_PROJECT",
             "VERTEX_REGION",
             "GOOGLE_VERTEX_API_KEY",
         ] {

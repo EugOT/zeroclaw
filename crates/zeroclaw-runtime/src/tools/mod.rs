@@ -121,6 +121,18 @@ pub use zeroclaw_tools::wrappers::{PathGuardedTool, RateLimitedTool};
 pub use zeroclaw_api::schema::{CleaningStrategy, SchemaCleanr};
 pub use zeroclaw_api::tool::{Tool, ToolResult, ToolSpec};
 
+/// Build the LLM-facing tool metadata with a Fluent description when the
+/// runtime has a catalog entry for the tool name.
+pub fn localized_tool_spec(tool: &dyn Tool) -> ToolSpec {
+    ToolSpec {
+        name: tool.name().to_string(),
+        description: crate::i18n::get_tool_description(tool.name())
+            .unwrap_or_else(|| tool.description())
+            .to_string(),
+        parameters: tool.parameters_schema(),
+    }
+}
+
 // Local tool re-exports (tools with root deps, kept in misc)
 pub use cron_add::CronAddTool;
 pub use cron_list::CronListTool;
@@ -1644,6 +1656,24 @@ mod tests {
             assert_eq!(spec.description, tool.description());
             assert!(spec.parameters.is_object());
         }
+    }
+
+    #[test]
+    fn localized_tool_spec_uses_fluent_when_available() {
+        let security = Arc::new(SecurityPolicy::default());
+        let tool = GeminiCliTool::new(security, Default::default());
+
+        let spec = localized_tool_spec(&tool);
+
+        assert_eq!(spec.name, "gemini_cli");
+        assert_eq!(
+            spec.description,
+            "Delegate a coding task to Antigravity CLI (agy -p). Supports Gemini-family work through the approved Antigravity runtime path."
+        );
+        assert_eq!(
+            crate::i18n::get_tool_description("gemini_cli"),
+            Some(spec.description.as_str())
+        );
     }
 
     #[test]

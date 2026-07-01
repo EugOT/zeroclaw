@@ -560,7 +560,10 @@ impl AgentBuilder {
             tools.retain(|t| !zeroclaw_tools::MEMORY_TOOL_NAMES.contains(&t.name()));
         }
 
-        let tool_specs = tools.iter().map(|tool| tool.spec()).collect();
+        let tool_specs = tools
+            .iter()
+            .map(|tool| tools::localized_tool_spec(tool.as_ref()))
+            .collect();
         let workspace_dir = self
             .workspace_dir
             .clone()
