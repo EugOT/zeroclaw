@@ -12,9 +12,9 @@
 //!
 //! Antigravity CLI is invoked as:
 //! ```text
-//! agy chat
+//! agy -p "<prompt>"
 //! ```
-//! with prompt content written to stdin when supported by the CLI.
+//! using Antigravity's headless print mode.
 //!
 //! # Limitations
 //!
@@ -34,7 +34,6 @@
 use crate::traits::{ChatRequest, ChatResponse, ModelProvider, TokenUsage};
 use async_trait::async_trait;
 use std::path::PathBuf;
-use tokio::io::AsyncWriteExt;
 use tokio::process::Command;
 use tokio::time::{Duration, timeout};
 
@@ -116,8 +115,8 @@ impl GeminiCliModelProvider {
 
     /// Build the argv tail (excluding the binary itself) for a CLI invocation.
     ///
-    fn build_cli_args(model: &str) -> Vec<String> {
-        let mut args = vec!["chat".to_string()];
+    fn build_cli_args(message: &str, model: &str) -> Vec<String> {
+        let mut args = vec!["-p".to_string(), message.to_string()];
         if Self::should_forward_model(model) {
             args.push("--model".to_string());
             args.push(model.to_string());
@@ -129,14 +128,14 @@ impl GeminiCliModelProvider {
     /// Returns the trimmed stdout output as the assistant response.
     async fn invoke_cli(&self, message: &str, model: &str) -> anyhow::Result<String> {
         let mut cmd = Command::new(&self.binary_path);
-        cmd.args(Self::build_cli_args(model));
+        cmd.args(Self::build_cli_args(message, model));
 
         cmd.kill_on_drop(true);
-        cmd.stdin(std::process::Stdio::piped());
+        cmd.stdin(std::process::Stdio::null());
         cmd.stdout(std::process::Stdio::piped());
         cmd.stderr(std::process::Stdio::piped());
 
-        let mut child = cmd.spawn().map_err(|err| {
+        let child = cmd.spawn().map_err(|err| {
             ::zeroclaw_log::record!(
                 ERROR,
                 ::zeroclaw_log::Event::new(module_path!(), ::zeroclaw_log::Action::Fail)
@@ -154,39 +153,6 @@ impl GeminiCliModelProvider {
                 self.binary_path.display()
             ))
         })?;
-
-        if let Some(mut stdin) = child.stdin.take() {
-            stdin.write_all(message.as_bytes()).await.map_err(|err| {
-                ::zeroclaw_log::record!(
-                    ERROR,
-                    ::zeroclaw_log::Event::new(module_path!(), ::zeroclaw_log::Action::Fail)
-                        .with_outcome(::zeroclaw_log::EventOutcome::Failure)
-                        .with_attrs(::serde_json::json!({
-                            "phase": "stdin_write",
-                            "error": format!("{}", err),
-                        })),
-                    "gemini_cli: failed to write prompt to stdin"
-                );
-                anyhow::Error::msg(format!(
-                    "Failed to write prompt to Antigravity CLI stdin: {err}"
-                ))
-            })?;
-            stdin.shutdown().await.map_err(|err| {
-                ::zeroclaw_log::record!(
-                    ERROR,
-                    ::zeroclaw_log::Event::new(module_path!(), ::zeroclaw_log::Action::Fail)
-                        .with_outcome(::zeroclaw_log::EventOutcome::Failure)
-                        .with_attrs(::serde_json::json!({
-                            "phase": "stdin_shutdown",
-                            "error": format!("{}", err),
-                        })),
-                    "gemini_cli: failed to finalize stdin stream"
-                );
-                anyhow::Error::msg(format!(
-                    "Failed to finalize Antigravity CLI stdin stream: {err}"
-                ))
-            })?;
-        }
 
         let output = timeout(GEMINI_CLI_REQUEST_TIMEOUT, child.wait_with_output())
             .await
@@ -365,25 +331,23 @@ mod tests {
     }
 
     #[test]
-    fn build_cli_args_uses_antigravity_chat_for_default_model() {
-        let args = GeminiCliModelProvider::build_cli_args(DEFAULT_MODEL_MARKER);
-        assert_eq!(args, vec!["chat".to_string()]);
-        assert!(!args.iter().any(|a| a == "--print"));
-        assert!(!args.iter().any(|a| a == "-"));
+    fn build_cli_args_uses_antigravity_print_mode_for_default_model() {
+        let args = GeminiCliModelProvider::build_cli_args("hello", DEFAULT_MODEL_MARKER);
+        assert_eq!(args, vec!["-p".to_string(), "hello".to_string()]);
     }
 
     #[test]
-    fn build_cli_args_forwards_explicit_model_after_prompt() {
-        let args = GeminiCliModelProvider::build_cli_args("gemini-2.5-pro");
+    fn build_cli_args_forwards_explicit_model_after_print_prompt() {
+        let args = GeminiCliModelProvider::build_cli_args("hello", "gemini-2.5-pro");
         assert_eq!(
             args,
             vec![
-                "chat".to_string(),
+                "-p".to_string(),
+                "hello".to_string(),
                 "--model".to_string(),
                 "gemini-2.5-pro".to_string(),
             ]
         );
-        assert!(!args.iter().any(|a| a == "--print"));
     }
 
     #[tokio::test]
