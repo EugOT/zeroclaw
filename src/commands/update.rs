@@ -2,7 +2,7 @@
 
 use anyhow::{Context, Result, bail};
 use sha2::{Digest, Sha256};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 #[cfg(feature = "agent-runtime")]
 use zeroclaw_runtime::i18n::get_required_cli_string_with_args;
@@ -129,6 +129,7 @@ pub async fn run(target_version: Option<&str>) -> Result<()> {
 
     let current_exe =
         std::env::current_exe().context("cannot determine current executable path")?;
+    let alias_exe = sibling_alias_path(&current_exe);
 
     // Phase 2: Download
     ::zeroclaw_log::record!(
@@ -155,6 +156,11 @@ pub async fn run(target_version: Option<&str>) -> Result<()> {
     tokio::fs::copy(&current_exe, &backup_path)
         .await
         .context("failed to backup current binary")?;
+    let alias_backup_path = if let Some(alias) = alias_exe.as_deref() {
+        backup_existing_binary(alias).await?
+    } else {
+        None
+    };
 
     // Phase 4: Validate
     ::zeroclaw_log::record!(
@@ -198,8 +204,29 @@ pub async fn run(target_version: Option<&str>) -> Result<()> {
     );
     match smoke_test(&current_exe).await {
         Ok(()) => {
+            if let Some(alias) = alias_exe.as_deref() {
+                if let Err(e) = async {
+                    sync_alias_binary(&current_exe, alias).await?;
+                    smoke_test(alias).await
+                }
+                .await
+                {
+                    rollback_binary_pair(
+                        &backup_path,
+                        &current_exe,
+                        Some((alias, alias_backup_path.as_deref())),
+                    )
+                    .await
+                    .context("rollback after alias sync failure")?;
+                    bail!("Update rolled back — alias sync failed: {e}");
+                }
+            }
+
             // Cleanup backup on success
             let _ = tokio::fs::remove_file(&backup_path).await;
+            if let Some(alias_backup) = alias_backup_path.as_deref() {
+                let _ = tokio::fs::remove_file(alias_backup).await;
+            }
             println!("{}", update_success_message(&update_info.latest_version));
             Ok(())
         }
@@ -574,6 +601,7 @@ fn host_architecture() -> Option<&'static str> {
     }
 }
 
+/// Replace the current executable with the downloaded binary.
 async fn swap_binary(new: &Path, target: &Path) -> Result<()> {
     // On Linux, a running binary cannot be overwritten in place (ETXTBSY).
     // Remove the old file first, then copy the new one into the now-free path.
@@ -587,6 +615,7 @@ async fn swap_binary(new: &Path, target: &Path) -> Result<()> {
     Ok(())
 }
 
+/// Restore a previously backed-up binary over the current executable path.
 async fn rollback_binary(backup: &Path, target: &Path) -> Result<()> {
     // Remove-then-copy to avoid ETXTBSY if the target is somehow still mapped.
     let _ = tokio::fs::remove_file(target).await;
@@ -594,6 +623,91 @@ async fn rollback_binary(backup: &Path, target: &Path) -> Result<()> {
         .await
         .context("failed to restore backup binary")?;
     Ok(())
+}
+
+/// Return the sibling alias path for `zeroclaw`/`zrc` binary names.
+fn sibling_alias_path(current_exe: &Path) -> Option<PathBuf> {
+    let file_name = current_exe.file_name()?.to_str()?;
+    let sibling_name = match file_name {
+        "zeroclaw" => "zrc",
+        "zrc" => "zeroclaw",
+        "zeroclaw.exe" => "zrc.exe",
+        "zrc.exe" => "zeroclaw.exe",
+        _ => return None,
+    };
+    Some(current_exe.with_file_name(sibling_name))
+}
+
+/// Back up an existing binary if it is present at the given path.
+async fn backup_existing_binary(path: &Path) -> Result<Option<PathBuf>> {
+    match tokio::fs::metadata(path).await {
+        Ok(meta) if meta.is_file() => {
+            let backup = path.with_extension("bak");
+            tokio::fs::copy(path, &backup)
+                .await
+                .with_context(|| format!("failed to backup alias binary {}", path.display()))?;
+            Ok(Some(backup))
+        }
+        Ok(_) => Ok(None),
+        Err(err) if err.kind() == std::io::ErrorKind::NotFound => Ok(None),
+        Err(err) => {
+            Err(err).with_context(|| format!("failed to stat alias binary {}", path.display()))
+        }
+    }
+}
+
+/// Copy the updated primary binary to its sibling alias path.
+async fn sync_alias_binary(current_exe: &Path, alias: &Path) -> Result<()> {
+    let _ = tokio::fs::remove_file(alias).await;
+    tokio::fs::copy(current_exe, alias)
+        .await
+        .with_context(|| format!("failed to sync alias binary {}", alias.display()))?;
+    let perms = tokio::fs::metadata(current_exe)
+        .await
+        .context("failed to read updated binary permissions")?
+        .permissions();
+    tokio::fs::set_permissions(alias, perms)
+        .await
+        .with_context(|| {
+            format!(
+                "failed to set alias binary permissions for {}",
+                alias.display()
+            )
+        })?;
+    Ok(())
+}
+
+/// Restore an optional alias backup, or remove an alias created during update.
+async fn rollback_optional_binary(target: &Path, backup: Option<&Path>) -> Result<()> {
+    if let Some(backup) = backup {
+        rollback_binary(backup, target).await
+    } else {
+        let _ = tokio::fs::remove_file(target).await;
+        Ok(())
+    }
+}
+
+/// Roll back the main binary and alias binary, attempting both paths.
+async fn rollback_binary_pair(
+    backup: &Path,
+    target: &Path,
+    alias: Option<(&Path, Option<&Path>)>,
+) -> Result<()> {
+    let main_result = rollback_binary(backup, target).await;
+    let alias_result = if let Some((alias_target, alias_backup)) = alias {
+        rollback_optional_binary(alias_target, alias_backup).await
+    } else {
+        Ok(())
+    };
+
+    match (main_result, alias_result) {
+        (Ok(()), Ok(())) => Ok(()),
+        (Err(main_err), Ok(())) => Err(main_err).context("failed to rollback main binary"),
+        (Ok(()), Err(alias_err)) => Err(alias_err).context("failed to rollback alias binary"),
+        (Err(main_err), Err(alias_err)) => Err(main_err).context(format!(
+            "failed to rollback main binary; alias rollback also failed: {alias_err}"
+        )),
+    }
 }
 
 async fn smoke_test(binary: &Path) -> Result<()> {
@@ -650,6 +764,51 @@ mod tests {
             target_triple_for("windows", "x86_64", true),
             Some("x86_64-pc-windows-gnu")
         );
+    }
+
+    #[test]
+    fn sibling_alias_path_maps_zeroclaw_and_zrc_names() {
+        assert_eq!(
+            sibling_alias_path(Path::new("/usr/local/bin/zeroclaw")).unwrap(),
+            PathBuf::from("/usr/local/bin/zrc")
+        );
+        assert_eq!(
+            sibling_alias_path(Path::new("/usr/local/bin/zrc")).unwrap(),
+            PathBuf::from("/usr/local/bin/zeroclaw")
+        );
+        assert_eq!(
+            sibling_alias_path(Path::new("/tmp/zeroclaw.exe")).unwrap(),
+            PathBuf::from("/tmp/zrc.exe")
+        );
+        assert!(sibling_alias_path(Path::new("/usr/local/bin/other")).is_none());
+    }
+
+    #[tokio::test]
+    async fn rollback_binary_pair_attempts_alias_after_main_failure() {
+        let tmp = tempfile::tempdir().unwrap();
+        let missing_main_backup = tmp.path().join("zeroclaw.bak");
+        let current = tmp.path().join("zeroclaw");
+        let alias = tmp.path().join("zrc");
+        let alias_backup = tmp.path().join("zrc.bak");
+
+        std::fs::write(&current, b"new-main").unwrap();
+        std::fs::write(&alias, b"new-alias").unwrap();
+        std::fs::write(&alias_backup, b"old-alias").unwrap();
+
+        let err = rollback_binary_pair(
+            &missing_main_backup,
+            &current,
+            Some((&alias, Some(alias_backup.as_path()))),
+        )
+        .await
+        .unwrap_err()
+        .to_string();
+
+        assert!(
+            err.contains("failed to rollback main binary"),
+            "unexpected rollback error: {err}"
+        );
+        assert_eq!(std::fs::read(&alias).unwrap(), b"old-alias");
     }
 
     fn make_release(assets: &[&str]) -> serde_json::Value {

@@ -47,6 +47,8 @@ cd zeroclaw
 
 The installer asks whether you want a prebuilt binary (fast, ~seconds) or a source build (slower, customisable). Both end the same way — `zeroclaw quickstart` kicks off automatically.
 
+The EugOT fork also builds `zrc` as a short, collision-free alias for the same CLI entry point. Existing `zeroclaw` invocations continue to work.
+
 Flags:
 
 ```
@@ -54,7 +56,7 @@ Flags:
 ./install.sh --source                # always build from source
 ./install.sh --minimal               # kernel only (~6.6 MB)
 ./install.sh --source --features agent-runtime,channel-discord  # custom feature set
-./install.sh --skip-quickstart       # install only, run `zeroclaw quickstart` later
+./install.sh --skip-quickstart       # install only, run `zrc quickstart` later in the EugOT fork
 ./install.sh --list-features         # print available feature flags
 ```
 
@@ -63,11 +65,13 @@ Platform-specific notes: [Linux](docs/book/src/setup/linux.md) · [macOS](docs/b
 ## Quick start
 
 ```bash
-zeroclaw quickstart               # one-shot setup: pick a provider, write a working config
-zeroclaw agent -a <alias>         # interactive chat using the [agents.<alias>] entry
-zeroclaw service install          # register as systemd/launchctl/Windows Service
-zeroclaw service start            # run it always-on in the background
+zrc quickstart                    # one-shot setup: pick a provider, write a working config
+zrc agent -a <alias>              # interactive chat using the [agents.<alias>] entry
+zrc service install               # register as systemd/launchctl/Windows Service
+zrc service start                 # run it always-on in the background
 ```
+
+`zeroclaw` remains equivalent for existing scripts; `zrc` is the preferred EugOT fork alias when command names collide with another installed ZeroClaw package.
 
 Full walkthrough: [Quick start](docs/book/src/getting-started/quickstart.md) — or skip the safety gates with [YOLO mode](docs/book/src/getting-started/yolo.md) for dev boxes.
 
