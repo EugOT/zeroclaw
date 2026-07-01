@@ -417,7 +417,10 @@ fn compute_excluded_mcp_tools(
         return Vec::new();
     }
     let filtered_specs = filter_tool_specs_for_turn(
-        tools_registry.iter().map(|t| t.spec()).collect(),
+        tools_registry
+            .iter()
+            .map(|tool| crate::tools::localized_tool_spec(tool.as_ref()))
+            .collect(),
         groups,
         user_message,
     );
@@ -1698,7 +1701,7 @@ pub async fn run_tool_call_loop(
         let mut tool_specs: Vec<crate::tools::ToolSpec> = tools_registry
             .iter()
             .filter(|tool| !excluded_tools.iter().any(|ex| ex == tool.name()))
-            .map(|tool| tool.spec())
+            .map(|tool| crate::tools::localized_tool_spec(tool.as_ref()))
             .collect();
         if let Some(at) = activated_tools {
             for spec in at.lock().unwrap().tool_specs() {

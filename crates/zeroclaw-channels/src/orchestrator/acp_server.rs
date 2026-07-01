@@ -2242,13 +2242,14 @@ mod tests {
             data_dir: cwd.path().to_path_buf(),
             providers: {
                 let mut p = zeroclaw_config::providers::Providers::default();
-                p.models.openrouter.insert(
+                p.models.ollama.insert(
                     "default".to_string(),
-                    zeroclaw_config::schema::OpenRouterModelProviderConfig {
+                    zeroclaw_config::schema::OllamaModelProviderConfig {
                         base: zeroclaw_config::schema::ModelProviderConfig {
                             model: Some("test-model".to_string()),
                             ..Default::default()
                         },
+                        ..Default::default()
                     },
                 );
                 p
@@ -2273,7 +2274,7 @@ mod tests {
         config.agents.insert(
             "test-agent".to_string(),
             zeroclaw_config::schema::AliasedAgentConfig {
-                model_provider: "openrouter.default".into(),
+                model_provider: "ollama.default".into(),
                 risk_profile: "default".to_string(),
                 ..Default::default()
             },
@@ -2302,14 +2303,14 @@ mod tests {
             data_dir: cwd.path().to_path_buf(),
             providers: {
                 let mut p = zeroclaw_config::providers::Providers::default();
-                p.models.openrouter.insert(
+                p.models.ollama.insert(
                     "default".to_string(),
-                    zeroclaw_config::schema::OpenRouterModelProviderConfig {
+                    zeroclaw_config::schema::OllamaModelProviderConfig {
                         base: zeroclaw_config::schema::ModelProviderConfig {
-                            api_key: Some("test-key".to_string()),
                             model: Some("test-model".to_string()),
                             ..Default::default()
                         },
+                        ..Default::default()
                     },
                 );
                 p
@@ -2323,7 +2324,7 @@ mod tests {
         config.agents.insert(
             "only-agent".to_string(),
             zeroclaw_config::schema::AliasedAgentConfig {
-                model_provider: "openrouter.default".into(),
+                model_provider: "ollama.default".into(),
                 risk_profile: "default".to_string(),
                 ..Default::default()
             },
@@ -2377,14 +2378,14 @@ mod tests {
             data_dir: cwd.path().to_path_buf(),
             providers: {
                 let mut p = zeroclaw_config::providers::Providers::default();
-                p.models.openrouter.insert(
+                p.models.ollama.insert(
                     "default".to_string(),
-                    zeroclaw_config::schema::OpenRouterModelProviderConfig {
+                    zeroclaw_config::schema::OllamaModelProviderConfig {
                         base: zeroclaw_config::schema::ModelProviderConfig {
-                            api_key: Some("test-key".to_string()),
                             model: Some("test-model".to_string()),
                             ..Default::default()
                         },
+                        ..Default::default()
                     },
                 );
                 p
@@ -2398,7 +2399,7 @@ mod tests {
         config.agents.insert(
             "agent-alpha".to_string(),
             zeroclaw_config::schema::AliasedAgentConfig {
-                model_provider: "openrouter.default".into(),
+                model_provider: "ollama.default".into(),
                 risk_profile: "default".to_string(),
                 ..Default::default()
             },
@@ -2406,7 +2407,7 @@ mod tests {
         config.agents.insert(
             "agent-beta".to_string(),
             zeroclaw_config::schema::AliasedAgentConfig {
-                model_provider: "openrouter.default".into(),
+                model_provider: "ollama.default".into(),
                 risk_profile: "default".to_string(),
                 ..Default::default()
             },
@@ -2435,14 +2436,14 @@ mod tests {
             data_dir: cwd.path().to_path_buf(),
             providers: {
                 let mut p = zeroclaw_config::providers::Providers::default();
-                p.models.openrouter.insert(
+                p.models.ollama.insert(
                     "default".to_string(),
-                    zeroclaw_config::schema::OpenRouterModelProviderConfig {
+                    zeroclaw_config::schema::OllamaModelProviderConfig {
                         base: zeroclaw_config::schema::ModelProviderConfig {
-                            api_key: Some("test-key".to_string()),
                             model: Some("test-model".to_string()),
                             ..Default::default()
                         },
+                        ..Default::default()
                     },
                 );
                 p
@@ -2456,7 +2457,7 @@ mod tests {
         config.agents.insert(
             "agent-alpha".to_string(),
             zeroclaw_config::schema::AliasedAgentConfig {
-                model_provider: "openrouter.default".into(),
+                model_provider: "ollama.default".into(),
                 risk_profile: "default".to_string(),
                 ..Default::default()
             },
@@ -2464,7 +2465,7 @@ mod tests {
         config.agents.insert(
             "agent-beta".to_string(),
             zeroclaw_config::schema::AliasedAgentConfig {
-                model_provider: "openrouter.default".into(),
+                model_provider: "ollama.default".into(),
                 risk_profile: "default".to_string(),
                 ..Default::default()
             },
@@ -2846,13 +2847,14 @@ mod tests {
             data_dir: cwd.path().to_path_buf(),
             providers: {
                 let mut p = zeroclaw_config::providers::Providers::default();
-                p.models.anthropic.insert(
+                p.models.ollama.insert(
                     "default".to_string(),
-                    zeroclaw_config::schema::AnthropicModelProviderConfig {
+                    zeroclaw_config::schema::OllamaModelProviderConfig {
                         base: zeroclaw_config::schema::ModelProviderConfig {
-                            model: Some("claude-haiku-4-5".to_string()),
+                            model: Some("test-model".to_string()),
                             ..Default::default()
                         },
+                        ..Default::default()
                     },
                 );
                 p
@@ -2866,7 +2868,7 @@ mod tests {
         config.agents.insert(
             "test-agent".to_string(),
             zeroclaw_config::schema::AliasedAgentConfig {
-                model_provider: "anthropic.default".into(),
+                model_provider: "ollama.default".into(),
                 risk_profile: "default".to_string(),
                 ..Default::default()
             },
@@ -2966,13 +2968,14 @@ mod tests {
             data_dir: cwd.to_path_buf(),
             ..Default::default()
         };
-        cfg.providers.models.anthropic.insert(
+        cfg.providers.models.ollama.insert(
             "default".to_string(),
-            zeroclaw_config::schema::AnthropicModelProviderConfig {
+            zeroclaw_config::schema::OllamaModelProviderConfig {
                 base: zeroclaw_config::schema::ModelProviderConfig {
-                    model: Some("claude-haiku-4-5".to_string()),
+                    model: Some("test-model".to_string()),
                     ..Default::default()
                 },
+                ..Default::default()
             },
         );
         cfg.risk_profiles.insert(
@@ -2982,7 +2985,7 @@ mod tests {
         cfg.agents.insert(
             "test-agent".to_string(),
             zeroclaw_config::schema::AliasedAgentConfig {
-                model_provider: "anthropic.default".into(),
+                model_provider: "ollama.default".into(),
                 risk_profile: "default".to_string(),
                 ..Default::default()
             },

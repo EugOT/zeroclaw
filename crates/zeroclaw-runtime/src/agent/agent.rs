@@ -560,7 +560,10 @@ impl AgentBuilder {
             tools.retain(|t| !zeroclaw_tools::MEMORY_TOOL_NAMES.contains(&t.name()));
         }
 
-        let tool_specs = tools.iter().map(|tool| tool.spec()).collect();
+        let tool_specs = tools
+            .iter()
+            .map(|tool| tools::localized_tool_spec(tool.as_ref()))
+            .collect();
         let workspace_dir = self
             .workspace_dir
             .clone()
@@ -4702,7 +4705,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn from_config_accepts_openai_alias_with_requires_openai_auth() {
+    async fn from_config_rejects_openai_alias_with_requires_openai_auth() {
         use tempfile::TempDir;
         use zeroclaw_config::schema::{
             AliasedAgentConfig, Config, ModelProviderConfig, OpenAIModelProviderConfig,
@@ -4745,10 +4748,14 @@ mod tests {
 
         let result = Agent::from_config(&config, "test-agent").await;
 
+        let err = match result {
+            Ok(_) => panic!("openai aliases must not construct direct API providers"),
+            Err(err) => err,
+        };
         assert!(
-            result.is_ok(),
-            "openai alias with requires_openai_auth should construct via Codex OAuth path: {}",
-            result.err().unwrap()
+            err.to_string()
+                .contains("Direct OpenAI provider runtime is disabled"),
+            "expected direct OpenAI runtime policy error, got: {err}"
         );
     }
 

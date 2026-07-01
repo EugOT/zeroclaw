@@ -3641,8 +3641,8 @@ mod tests {
         {
             let base = providers
                 .models
-                .ensure("openai", "test-provider")
-                .expect("`openai` slot must exist");
+                .ensure("custom", "test-provider")
+                .expect("`custom` slot must exist");
             base.api_key = Some("test-key".into());
             base.model = Some("test-model".into());
             base.uri = Some("http://127.0.0.1:1".into());
@@ -3653,7 +3653,7 @@ mod tests {
             "test-agent".to_string(),
             AliasedAgentConfig {
                 enabled: true,
-                model_provider: "openai.test-provider".into(),
+                model_provider: "custom.test-provider".into(),
                 risk_profile: "test-profile".to_string(),
                 ..Default::default()
             },
@@ -4394,8 +4394,8 @@ mod tests {
         let provider = config
             .providers
             .models
-            .ensure("openai", "test-provider")
-            .expect("openai provider slot exists");
+            .ensure("custom", "test-provider")
+            .expect("custom provider slot exists");
         provider.api_key = Some("test-key".into());
         provider.uri = Some("http://127.0.0.1:1".into());
         provider.model = Some("old-model".into());
@@ -4405,7 +4405,7 @@ mod tests {
             "test-agent".to_string(),
             AliasedAgentConfig {
                 enabled: true,
-                model_provider: "openai.test-provider".into(),
+                model_provider: "custom.test-provider".into(),
                 risk_profile: "test-profile".into(),
                 ..Default::default()
             },
@@ -4499,7 +4499,7 @@ mod tests {
 
         let res = dispatcher
             .handle_config_set(&json!({
-                "prop": "providers.models.openai.test-provider.model",
+                "prop": "providers.models.custom.test-provider.model",
                 "value": "new-model"
             }))
             .await;
@@ -4520,7 +4520,7 @@ mod tests {
 
         let res = dispatcher
             .handle_config_set(&json!({
-                "prop": "providers.models.openai.test-provider.model",
+                "prop": "providers.models.custom.test-provider.model",
                 "value": ""
             }))
             .await;
@@ -4532,7 +4532,7 @@ mod tests {
         let stored = cfg
             .providers
             .models
-            .openai
+            .custom
             .get("test-provider")
             .and_then(|e| e.base.model.clone());
         assert_eq!(
@@ -4558,7 +4558,7 @@ mod tests {
 
         let res = dispatcher
             .handle_config_set(&json!({
-                "prop": "providers.models.openai.test-provider.temperature",
+                "prop": "providers.models.custom.test-provider.temperature",
                 "value": 0.4
             }))
             .await;
@@ -4588,7 +4588,7 @@ mod tests {
 
         let res = dispatcher
             .handle_config_set(&json!({
-                "prop": "providers.models.openai.test-provider.model",
+                "prop": "providers.models.custom.test-provider.model",
                 "value": "new-model"
             }))
             .await;
@@ -4614,7 +4614,7 @@ mod tests {
 
         let res = dispatcher
             .handle_config_delete(&json!({
-                "prop": "providers.models.openai.test-provider.temperature",
+                "prop": "providers.models.custom.test-provider.temperature",
             }))
             .await;
         assert!(res.is_ok(), "config/delete must succeed: {res:?}");

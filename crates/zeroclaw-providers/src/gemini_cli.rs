@@ -1,22 +1,20 @@
-//! Gemini CLI subprocess model_provider.
+//! Antigravity CLI subprocess model_provider for Gemini-family runtimes.
 //!
-//! Integrates with the Gemini CLI, spawning the `gemini` binary
-//! as a subprocess for each inference request. This allows using Google's
-//! Gemini models via the CLI without an interactive UI session.
+//! Integrates with Antigravity, spawning the `agy` binary as a subprocess for
+//! each inference request. This keeps Gemini-family access on the approved
+//! Antigravity runtime path instead of direct Google AI Studio / Gemini API /
+//! Vertex calls.
 //!
 //! # Usage
 //!
-//! The `gemini` binary must be available in `PATH`, or its location can be
+//! The `agy` binary must be available in `PATH`, or its location can be
 //! set via the typed alias's `binary_path` field.
 //!
-//! Gemini CLI is invoked as:
+//! Antigravity CLI is invoked as:
 //! ```text
-//! gemini --prompt ""
+//! agy -p "<prompt>"
 //! ```
-//! with prompt content written to stdin. The empty `--prompt ""` is the
-//! headless-mode trigger; the CLI appends stdin to it, so the actual prompt
-//! is never visible in `ps` / `/proc/<pid>/cmdline`. Older CLI builds used
-//! `--print -` for this; that flag was removed in Gemini CLI v0.40.x.
+//! using Antigravity's headless print mode.
 //!
 //! # Limitations
 //!
@@ -30,22 +28,21 @@
 //!
 //! # Authentication
 //!
-//! Authentication is handled by the Gemini CLI itself (its own credential store).
-//! No explicit API key is required by this model_provider.
+//! Authentication is handled by Antigravity itself. Direct Google AI Studio,
+//! Gemini API, and Vertex credentials are not accepted by this model_provider.
 //!
 use crate::traits::{ChatRequest, ChatResponse, ModelProvider, TokenUsage};
 use async_trait::async_trait;
 use std::path::PathBuf;
-use tokio::io::AsyncWriteExt;
 use tokio::process::Command;
 use tokio::time::{Duration, timeout};
 
-/// Default `gemini` binary name (resolved via `PATH`).
-const DEFAULT_GEMINI_CLI_BINARY: &str = "gemini";
+/// Default Antigravity binary name (resolved via `PATH`).
+const DEFAULT_ANTIGRAVITY_CLI_BINARY: &str = "agy";
 
 /// Model name used to signal "use the model_provider's own default model".
 const DEFAULT_MODEL_MARKER: &str = "default";
-/// Gemini CLI requests are bounded to avoid hung subprocesses.
+/// Antigravity CLI requests are bounded to avoid hung subprocesses.
 const GEMINI_CLI_REQUEST_TIMEOUT: Duration = Duration::from_secs(120);
 /// Avoid leaking oversized stderr payloads.
 const MAX_GEMINI_CLI_STDERR_CHARS: usize = 512;
@@ -53,26 +50,26 @@ const MAX_GEMINI_CLI_STDERR_CHARS: usize = 512;
 const GEMINI_CLI_SUPPORTED_TEMPERATURES: [f64; 2] = [0.7, 1.0];
 const TEMP_EPSILON: f64 = 1e-9;
 
-/// ModelProvider that invokes the Gemini CLI as a subprocess.
+/// ModelProvider that invokes Antigravity as a subprocess.
 ///
-/// Each inference request spawns a fresh `gemini` process. This is the
+/// Each inference request spawns a fresh `agy` process. This is the
 /// non-interactive approach: the process handles the prompt and exits.
 pub struct GeminiCliModelProvider {
     /// `[providers.models.<family>.<alias>]` config-key alias.
     alias: String,
-    /// Path to the `gemini` binary.
+    /// Path to the Antigravity binary.
     binary_path: PathBuf,
 }
 
 impl GeminiCliModelProvider {
     /// Create a new `GeminiCliModelProvider`. Pass `None` to use the default
-    /// `"gemini"` (PATH lookup); pass an explicit path to override.
+    /// `"agy"` (PATH lookup); pass an explicit path to override.
     pub fn new(alias: &str, binary_path: Option<&str>) -> Self {
         let binary_path = binary_path
             .map(str::trim)
             .filter(|p| !p.is_empty())
             .map(PathBuf::from)
-            .unwrap_or_else(|| PathBuf::from(DEFAULT_GEMINI_CLI_BINARY));
+            .unwrap_or_else(|| PathBuf::from(DEFAULT_ANTIGRAVITY_CLI_BINARY));
         Self {
             alias: alias.to_string(),
             binary_path,
@@ -92,11 +89,11 @@ impl GeminiCliModelProvider {
 
     fn validate_temperature(temperature: f64) -> anyhow::Result<()> {
         if !temperature.is_finite() {
-            anyhow::bail!("Gemini CLI model_provider received non-finite temperature value");
+            anyhow::bail!("Antigravity model_provider received non-finite temperature value");
         }
         if !Self::supports_temperature(temperature) {
             anyhow::bail!(
-                "temperature unsupported by Gemini CLI: {temperature}. \
+                "temperature unsupported by Antigravity CLI: {temperature}. \
                  Supported values: 0.7 or 1.0"
             );
         }
@@ -118,11 +115,8 @@ impl GeminiCliModelProvider {
 
     /// Build the argv tail (excluding the binary itself) for a CLI invocation.
     ///
-    /// `--prompt ""` is the headless-mode trigger; the CLI appends stdin to
-    /// it, so the actual prompt stays out of `ps` / `/proc/<pid>/cmdline`.
-    /// The pre-v0.40 syntax `--print -` was removed upstream in #6520.
-    fn build_cli_args(model: &str) -> Vec<String> {
-        let mut args = vec!["--prompt".to_string(), String::new()];
+    fn build_cli_args(message: &str, model: &str) -> Vec<String> {
+        let mut args = vec!["-p".to_string(), message.to_string()];
         if Self::should_forward_model(model) {
             args.push("--model".to_string());
             args.push(model.to_string());
@@ -130,18 +124,18 @@ impl GeminiCliModelProvider {
         args
     }
 
-    /// Invoke the gemini binary with the given prompt and optional model.
+    /// Invoke Antigravity with the given prompt and optional model.
     /// Returns the trimmed stdout output as the assistant response.
     async fn invoke_cli(&self, message: &str, model: &str) -> anyhow::Result<String> {
         let mut cmd = Command::new(&self.binary_path);
-        cmd.args(Self::build_cli_args(model));
+        cmd.args(Self::build_cli_args(message, model));
 
         cmd.kill_on_drop(true);
-        cmd.stdin(std::process::Stdio::piped());
+        cmd.stdin(std::process::Stdio::null());
         cmd.stdout(std::process::Stdio::piped());
         cmd.stderr(std::process::Stdio::piped());
 
-        let mut child = cmd.spawn().map_err(|err| {
+        let child = cmd.spawn().map_err(|err| {
             ::zeroclaw_log::record!(
                 ERROR,
                 ::zeroclaw_log::Event::new(module_path!(), ::zeroclaw_log::Action::Fail)
@@ -154,40 +148,11 @@ impl GeminiCliModelProvider {
                 "gemini_cli: failed to spawn binary"
             );
             anyhow::Error::msg(format!(
-                "Failed to spawn Gemini CLI binary at {}: {err}. \
-                 Ensure `gemini` is installed and in PATH, or set GEMINI_CLI_PATH.",
+                "Failed to spawn Antigravity CLI binary at {}: {err}. \
+                 Ensure `agy` is installed and in PATH, or set the alias binary_path.",
                 self.binary_path.display()
             ))
         })?;
-
-        if let Some(mut stdin) = child.stdin.take() {
-            stdin.write_all(message.as_bytes()).await.map_err(|err| {
-                ::zeroclaw_log::record!(
-                    ERROR,
-                    ::zeroclaw_log::Event::new(module_path!(), ::zeroclaw_log::Action::Fail)
-                        .with_outcome(::zeroclaw_log::EventOutcome::Failure)
-                        .with_attrs(::serde_json::json!({
-                            "phase": "stdin_write",
-                            "error": format!("{}", err),
-                        })),
-                    "gemini_cli: failed to write prompt to stdin"
-                );
-                anyhow::Error::msg(format!("Failed to write prompt to Gemini CLI stdin: {err}"))
-            })?;
-            stdin.shutdown().await.map_err(|err| {
-                ::zeroclaw_log::record!(
-                    ERROR,
-                    ::zeroclaw_log::Event::new(module_path!(), ::zeroclaw_log::Action::Fail)
-                        .with_outcome(::zeroclaw_log::EventOutcome::Failure)
-                        .with_attrs(::serde_json::json!({
-                            "phase": "stdin_shutdown",
-                            "error": format!("{}", err),
-                        })),
-                    "gemini_cli: failed to finalize stdin stream"
-                );
-                anyhow::Error::msg(format!("Failed to finalize Gemini CLI stdin stream: {err}"))
-            })?;
-        }
 
         let output = timeout(GEMINI_CLI_REQUEST_TIMEOUT, child.wait_with_output())
             .await
@@ -200,10 +165,10 @@ impl GeminiCliModelProvider {
                             "binary": self.binary_path.display().to_string(),
                             "timeout": format!("{:?}", GEMINI_CLI_REQUEST_TIMEOUT),
                         })),
-                    "gemini_cli: request timed out"
+                    "gemini_cli: Antigravity request timed out"
                 );
                 anyhow::Error::msg(format!(
-                    "Gemini CLI request timed out after {:?} (binary: {})",
+                    "Antigravity CLI request timed out after {:?} (binary: {})",
                     GEMINI_CLI_REQUEST_TIMEOUT,
                     self.binary_path.display()
                 ))
@@ -217,9 +182,9 @@ impl GeminiCliModelProvider {
                             "phase": "process_wait",
                             "error": format!("{}", err),
                         })),
-                    "gemini_cli: process wait failed"
+                    "gemini_cli: Antigravity process wait failed"
                 );
-                anyhow::Error::msg(format!("Gemini CLI process failed: {err}"))
+                anyhow::Error::msg(format!("Antigravity CLI process failed: {err}"))
             })?;
 
         if !output.status.success() {
@@ -231,8 +196,8 @@ impl GeminiCliModelProvider {
                 format!(" Stderr: {stderr_excerpt}")
             };
             anyhow::bail!(
-                "Gemini CLI exited with non-zero status {code}. \
-                 Check that Gemini CLI is authenticated and the CLI is supported.{stderr_note}"
+                "Antigravity CLI exited with non-zero status {code}. \
+                 Check that Antigravity is authenticated and the CLI is supported.{stderr_note}"
             );
         }
 
@@ -245,9 +210,9 @@ impl GeminiCliModelProvider {
                         "phase": "utf8_decode",
                         "error": format!("{}", err),
                     })),
-                "gemini_cli: non-UTF-8 stdout"
+                "gemini_cli: Antigravity produced non-UTF-8 stdout"
             );
-            anyhow::Error::msg(format!("Gemini CLI produced non-UTF-8 output: {err}"))
+            anyhow::Error::msg(format!("Antigravity CLI produced non-UTF-8 output: {err}"))
         })?;
 
         Ok(text.trim().to_string())
@@ -315,20 +280,20 @@ mod tests {
 
     #[test]
     fn new_uses_explicit_binary_path() {
-        let p = GeminiCliModelProvider::new("test", Some("/usr/local/bin/gemini"));
-        assert_eq!(p.binary_path, PathBuf::from("/usr/local/bin/gemini"));
+        let p = GeminiCliModelProvider::new("test", Some("/usr/local/bin/agy"));
+        assert_eq!(p.binary_path, PathBuf::from("/usr/local/bin/agy"));
     }
 
     #[test]
-    fn new_defaults_to_gemini() {
+    fn new_defaults_to_antigravity() {
         let p = GeminiCliModelProvider::new("test", None);
-        assert_eq!(p.binary_path, PathBuf::from("gemini"));
+        assert_eq!(p.binary_path, PathBuf::from("agy"));
     }
 
     #[test]
     fn new_ignores_blank_binary_path() {
         let p = GeminiCliModelProvider::new("test", Some("   "));
-        assert_eq!(p.binary_path, PathBuf::from("gemini"));
+        assert_eq!(p.binary_path, PathBuf::from("agy"));
     }
 
     #[test]
@@ -361,48 +326,41 @@ mod tests {
         let err = GeminiCliModelProvider::validate_temperature(0.2).unwrap_err();
         assert!(
             err.to_string()
-                .contains("temperature unsupported by Gemini CLI")
+                .contains("temperature unsupported by Antigravity CLI")
         );
     }
 
-    // Regression for #6520. Gemini CLI v0.40.x removed `--print`; the
-    // headless-mode flag is now `--prompt`. The argv must (a) carry
-    // `--prompt ""` so stdin still feeds the prompt content (keeping the
-    // user message out of `ps`) and (b) NEVER carry `--print` or `-`.
     #[test]
-    fn build_cli_args_uses_prompt_flag_with_empty_token_default_model() {
-        let args = GeminiCliModelProvider::build_cli_args(DEFAULT_MODEL_MARKER);
-        assert_eq!(args, vec!["--prompt".to_string(), String::new()]);
-        assert!(!args.iter().any(|a| a == "--print"));
-        assert!(!args.iter().any(|a| a == "-"));
+    fn build_cli_args_uses_antigravity_print_mode_for_default_model() {
+        let args = GeminiCliModelProvider::build_cli_args("hello", DEFAULT_MODEL_MARKER);
+        assert_eq!(args, vec!["-p".to_string(), "hello".to_string()]);
     }
 
     #[test]
-    fn build_cli_args_forwards_explicit_model_after_prompt() {
-        let args = GeminiCliModelProvider::build_cli_args("gemini-2.5-pro");
+    fn build_cli_args_forwards_explicit_model_after_print_prompt() {
+        let args = GeminiCliModelProvider::build_cli_args("hello", "gemini-2.5-pro");
         assert_eq!(
             args,
             vec![
-                "--prompt".to_string(),
-                String::new(),
+                "-p".to_string(),
+                "hello".to_string(),
                 "--model".to_string(),
                 "gemini-2.5-pro".to_string(),
             ]
         );
-        assert!(!args.iter().any(|a| a == "--print"));
     }
 
     #[tokio::test]
     async fn invoke_missing_binary_returns_error() {
         let model_provider = GeminiCliModelProvider {
             alias: "test".to_string(),
-            binary_path: PathBuf::from("/nonexistent/path/to/gemini"),
+            binary_path: PathBuf::from("/nonexistent/path/to/agy"),
         };
         let result = model_provider.invoke_cli("hello", "default").await;
         assert!(result.is_err());
         let msg = result.unwrap_err().to_string();
         assert!(
-            msg.contains("Failed to spawn Gemini CLI binary"),
+            msg.contains("Failed to spawn Antigravity CLI binary"),
             "unexpected error message: {msg}"
         );
     }

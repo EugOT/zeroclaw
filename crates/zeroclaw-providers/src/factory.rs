@@ -27,6 +27,13 @@ use crate::compatible::{AuthStyle, OpenAiCompatibleModelProvider};
 use crate::traits::ModelProvider;
 use anyhow::Result;
 
+fn direct_provider_policy_error(family: &str, alias: &str, allowed_path: &str) -> anyhow::Error {
+    anyhow::Error::msg(format!(
+        "Direct {family} provider runtime is disabled for alias `{alias}` by the EugOT runtime policy. \
+         Use {allowed_path}; direct provider API credentials and endpoints are not allowed in active runtime paths."
+    ))
+}
+
 /// Per-family construction trait. Implemented (directly or via the
 /// `CompatFamilySpec` blanket) by every typed `<Family>ModelProviderConfig`.
 ///
@@ -772,16 +779,15 @@ impl FamilyProviderFactory for OpenRouterModelProviderConfig {
         &self,
         alias: &str,
         key: Option<&str>,
-        _api_url: Option<&str>,
+        api_url: Option<&str>,
         opts: &ModelProviderRuntimeOptions,
     ) -> Result<Box<dyn ModelProvider>> {
-        let mut p =
-            crate::openrouter::OpenRouterModelProvider::new(alias, key, opts.provider_timeout_secs)
-                .with_max_tokens(opts.provider_max_tokens);
-        if let Some(extra) = opts.provider_extra.clone() {
-            p = p.with_extra_body(extra);
-        }
-        Ok(Box::new(p))
+        let _ = (self, key, api_url, opts);
+        Err(direct_provider_policy_error(
+            "OpenRouter",
+            alias,
+            "an explicitly documented gateway exception outside the Gemini/Claude/GPT model families",
+        ))
     }
 }
 
@@ -793,11 +799,12 @@ impl FamilyProviderFactory for AnthropicModelProviderConfig {
         api_url: Option<&str>,
         opts: &ModelProviderRuntimeOptions,
     ) -> Result<Box<dyn ModelProvider>> {
-        let mut p = crate::anthropic::AnthropicModelProvider::with_base_url(alias, key, api_url);
-        if let Some(mt) = opts.provider_max_tokens {
-            p = p.with_max_tokens(mt);
-        }
-        Ok(Box::new(p))
+        let _ = (self, key, api_url, opts);
+        Err(direct_provider_policy_error(
+            "Anthropic",
+            alias,
+            "Claude Code CLI (`claude -p`) or another approved Claude CLI/agent runtime",
+        ))
     }
 }
 
@@ -809,24 +816,12 @@ impl FamilyProviderFactory for OpenAIModelProviderConfig {
         api_url: Option<&str>,
         opts: &ModelProviderRuntimeOptions,
     ) -> Result<Box<dyn ModelProvider>> {
-        // Codex variant routing: OAuth subscription auth → Codex responses protocol.
-        if self.base.requires_openai_auth {
-            return Ok(Box::new(
-                crate::openai_codex::OpenAiCodexModelProvider::new(alias, opts, key)?,
-            ));
-        }
-        // Responses wire protocol with standard API key — full streaming tool calls.
-        if let Some(p) =
-            build_responses_provider_if_requested(self.base.wire_api, alias, api_url, key, opts)
-        {
-            return Ok(p);
-        }
-        // Default: chat_completions wire with standard API key.
-        let mut p = crate::openai::OpenAiModelProvider::with_base_url(alias, api_url, key);
-        if let Some(mt) = opts.provider_max_tokens {
-            p = p.with_max_tokens(Some(mt));
-        }
-        Ok(Box::new(p))
+        let _ = (self, key, api_url, opts);
+        Err(direct_provider_policy_error(
+            "OpenAI",
+            alias,
+            "Codex CLI/app/Agents SDK/ACP instead of direct OpenAI API construction",
+        ))
     }
 }
 
@@ -893,25 +888,15 @@ impl FamilyProviderFactory for GeminiModelProviderConfig {
         &self,
         alias: &str,
         key: Option<&str>,
-        _api_url: Option<&str>,
+        api_url: Option<&str>,
         opts: &ModelProviderRuntimeOptions,
     ) -> Result<Box<dyn ModelProvider>> {
-        let state_dir = opts.zeroclaw_dir.clone().unwrap_or_else(|| {
-            directories::UserDirs::new().map_or_else(
-                || std::path::PathBuf::from(".zeroclaw"),
-                |dirs| dirs.home_dir().join(".zeroclaw"),
-            )
-        });
-        let auth_service = crate::auth::AuthService::new(&state_dir, opts.secrets_encrypt);
-        Ok(Box::new(crate::gemini::GeminiModelProvider::new_with_auth(
+        let _ = (self, key, api_url, opts);
+        Err(direct_provider_policy_error(
+            "Gemini",
             alias,
-            key,
-            auth_service,
-            opts.auth_profile_override.clone(),
-            self.oauth_project.clone(),
-            self.oauth_client_id.clone(),
-            self.oauth_client_secret.clone(),
-        )))
+            "Antigravity / antigravity-cli (`agy chat`) for Gemini-family runtimes",
+        ))
     }
 }
 
@@ -934,55 +919,14 @@ impl FamilyProviderFactory for AzureModelProviderConfig {
         &self,
         alias: &str,
         key: Option<&str>,
-        _api_url: Option<&str>,
+        api_url: Option<&str>,
         _opts: &ModelProviderRuntimeOptions,
     ) -> Result<Box<dyn ModelProvider>> {
-        // Reads typed Azure alias fields directly. Operator sets these
-        // under `[providers.models.azure.<alias>]` or via the schema-mirror
-        // env grammar — env-var fallback eradicated.
-        let resource = self.resource.as_deref().ok_or_else(|| {
-            ::zeroclaw_log::record!(
-                ERROR,
-                ::zeroclaw_log::Event::new(module_path!(), ::zeroclaw_log::Action::Reject)
-                    .with_outcome(::zeroclaw_log::EventOutcome::Failure)
-                    .with_attrs(::serde_json::json!({
-                        "family": "azure",
-                        "alias": alias,
-                        "missing": "resource",
-                    })),
-                "factory: azure provider missing resource"
-            );
-            anyhow::Error::msg(
-                "Azure model_provider requires `resource`: set \
-                 `[providers.models.azure.<alias>] resource = \"...\"` in config.toml.",
-            )
-        })?;
-        let deployment = self.deployment.as_deref().ok_or_else(|| {
-            ::zeroclaw_log::record!(
-                ERROR,
-                ::zeroclaw_log::Event::new(module_path!(), ::zeroclaw_log::Action::Reject)
-                    .with_outcome(::zeroclaw_log::EventOutcome::Failure)
-                    .with_attrs(::serde_json::json!({
-                        "family": "azure",
-                        "alias": alias,
-                        "missing": "deployment",
-                    })),
-                "factory: azure provider missing deployment"
-            );
-            anyhow::Error::msg(
-                "Azure model_provider requires `deployment`: set \
-                 `[providers.models.azure.<alias>] deployment = \"...\"` in config.toml.",
-            )
-        })?;
-        let api_version = self.api_version.as_deref();
-        Ok(Box::new(
-            crate::azure_openai::AzureOpenAiModelProvider::new(
-                alias,
-                key,
-                resource,
-                deployment,
-                api_version,
-            ),
+        let _ = (self, key, api_url);
+        Err(direct_provider_policy_error(
+            "Azure OpenAI",
+            alias,
+            "Codex CLI/app/Agents SDK/ACP or an approved local gateway",
         ))
     }
 }
@@ -1359,6 +1303,13 @@ mod tests {
     use super::*;
     use zeroclaw_config::schema::ModelProviderConfig;
 
+    fn provider_err_text(result: Result<Box<dyn ModelProvider>>) -> String {
+        match result {
+            Ok(_) => panic!("provider construction unexpectedly succeeded"),
+            Err(err) => err.to_string(),
+        }
+    }
+
     /// Regression for the #7136 review: the Kilo Gateway default exists in two
     /// places — the typed `KiloEndpoint` in zeroclaw-config and the factory's
     /// `CompatFamilySpec::DEFAULT_URL` — and they must never drift apart.
@@ -1378,32 +1329,72 @@ mod tests {
     }
 
     #[test]
-    fn openai_factory_routes_to_codex_when_requires_openai_auth_true() {
+    fn openai_factory_blocks_codex_direct_runtime() {
         let cfg = OpenAIModelProviderConfig {
             base: ModelProviderConfig {
                 requires_openai_auth: true,
                 ..Default::default()
             },
         };
-        let provider = cfg
-            .create_provider("test", None, None, &ModelProviderRuntimeOptions::default())
-            .unwrap();
-        // OpenAiCodexModelProvider reports native_tool_calling; standard OpenAiModelProvider does not
-        assert!(provider.capabilities().native_tool_calling);
+        let err = provider_err_text(cfg.create_provider(
+            "test",
+            None,
+            None,
+            &ModelProviderRuntimeOptions::default(),
+        ));
+        assert!(err.contains("Codex CLI"));
     }
 
     #[test]
-    fn openai_factory_routes_to_standard_when_requires_openai_auth_false() {
+    fn direct_vendor_factories_fail_closed_by_policy() {
+        let opts = ModelProviderRuntimeOptions::default();
+
         let cfg = OpenAIModelProviderConfig {
             base: ModelProviderConfig {
                 requires_openai_auth: false,
                 ..Default::default()
             },
         };
-        let provider = cfg
-            .create_provider("test", None, None, &ModelProviderRuntimeOptions::default())
-            .unwrap();
-        assert!(!provider.capabilities().native_tool_calling);
+        assert!(
+            provider_err_text(cfg.create_provider("test", Some("sk-test"), None, &opts))
+                .contains("Direct OpenAI provider runtime is disabled")
+        );
+        assert!(
+            provider_err_text(AnthropicModelProviderConfig::default().create_provider(
+                "test",
+                Some("sk-ant-test"),
+                None,
+                &opts
+            ))
+            .contains("Claude Code CLI")
+        );
+        assert!(
+            provider_err_text(GeminiModelProviderConfig::default().create_provider(
+                "test",
+                Some("AIza-test"),
+                None,
+                &opts
+            ))
+            .contains("Antigravity")
+        );
+        assert!(
+            provider_err_text(OpenRouterModelProviderConfig::default().create_provider(
+                "test",
+                Some("sk-or-test"),
+                None,
+                &opts
+            ))
+            .contains("Direct OpenRouter provider runtime is disabled")
+        );
+        assert!(
+            provider_err_text(AzureModelProviderConfig::default().create_provider(
+                "test",
+                None,
+                None,
+                &ModelProviderRuntimeOptions::default()
+            ))
+            .contains("Direct Azure OpenAI provider runtime is disabled")
+        );
     }
 
     #[tokio::test]
