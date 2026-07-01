@@ -23,14 +23,14 @@ Default to a middle ground — brief explanation of what you're about to do, the
 
 Before running any ZeroClaw operation, make sure you know where things are:
 
-1. **Find the binary.** Search in this order:
-   - `which zrc` (PATH) — preferred for the EugOT fork because it avoids collisions with unrelated `zeroclaw` packages
+1. **Find the binaries.** Probe both PATH installs before choosing a session binary, so collisions are visible up front:
+   - `which zrc` (PATH)
    - `which zeroclaw` (PATH)
    - The current project's alias build output: `./target/release/zrc` or `./target/debug/zrc`
    - The current project's build output: `./target/release/zeroclaw` or `./target/debug/zeroclaw` — this is the right choice when the user is working inside the ZeroClaw source tree and may have local changes
    - Common install locations: `~/.cargo/bin/zrc`, `~/.cargo/bin/zeroclaw`, `~/Downloads/zeroclaw-bin/zrc`, `~/Downloads/zeroclaw-bin/zeroclaw`
 
-   Use the discovered binary consistently for later commands in the same session. Store it as `ZC=/path/to/zrc` or `ZC=/path/to/zeroclaw` in examples and replace every `$ZC` below with that same resolved path. If `zeroclaw` and `zrc` both exist but point to different installs, prefer `zrc` for the EugOT fork and report the collision before running stateful commands. If no binary is found anywhere, offer to build from source (see "Building from Source" below). If the user is a developer working on ZeroClaw itself, they'll likely want the local build — watch for cues like them editing source files, mentioning PRs, or being in the project directory.
+   Use the selected binary consistently for later commands in the same session. Store it as `ZC=/path/to/zrc` or `ZC=/path/to/zeroclaw` in examples and replace every `$ZC` below with that same resolved path. If `zeroclaw` and `zrc` both exist but point to different installs, prefer `zrc` for the EugOT fork and report the collision before running stateful commands. If no binary is found anywhere, offer to build from source (see "Building from Source" below). If the user is a developer working on ZeroClaw itself, they'll likely want the local build — watch for cues like them editing source files, mentioning PRs, or being in the project directory.
 
    In the normal EugOT fork path this means examples resolve to `zrc`, for example `ZC="$(command -v zrc)"` followed by `"$ZC" status` or `"$ZC" quickstart`. Keep `zeroclaw` as the fallback only when `zrc` is absent, and do not switch back to bare `zeroclaw` after `zrc` has been selected.
 

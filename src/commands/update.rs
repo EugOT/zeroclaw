@@ -601,6 +601,7 @@ fn host_architecture() -> Option<&'static str> {
     }
 }
 
+/// Replace the current executable with the downloaded binary.
 async fn swap_binary(new: &Path, target: &Path) -> Result<()> {
     // On Linux, a running binary cannot be overwritten in place (ETXTBSY).
     // Remove the old file first, then copy the new one into the now-free path.
@@ -614,6 +615,7 @@ async fn swap_binary(new: &Path, target: &Path) -> Result<()> {
     Ok(())
 }
 
+/// Restore a previously backed-up binary over the current executable path.
 async fn rollback_binary(backup: &Path, target: &Path) -> Result<()> {
     // Remove-then-copy to avoid ETXTBSY if the target is somehow still mapped.
     let _ = tokio::fs::remove_file(target).await;
@@ -623,6 +625,7 @@ async fn rollback_binary(backup: &Path, target: &Path) -> Result<()> {
     Ok(())
 }
 
+/// Return the sibling alias path for `zeroclaw`/`zrc` binary names.
 fn sibling_alias_path(current_exe: &Path) -> Option<PathBuf> {
     let file_name = current_exe.file_name()?.to_str()?;
     let sibling_name = match file_name {
@@ -635,6 +638,7 @@ fn sibling_alias_path(current_exe: &Path) -> Option<PathBuf> {
     Some(current_exe.with_file_name(sibling_name))
 }
 
+/// Back up an existing binary if it is present at the given path.
 async fn backup_existing_binary(path: &Path) -> Result<Option<PathBuf>> {
     match tokio::fs::metadata(path).await {
         Ok(meta) if meta.is_file() => {
@@ -652,6 +656,7 @@ async fn backup_existing_binary(path: &Path) -> Result<Option<PathBuf>> {
     }
 }
 
+/// Copy the updated primary binary to its sibling alias path.
 async fn sync_alias_binary(current_exe: &Path, alias: &Path) -> Result<()> {
     let _ = tokio::fs::remove_file(alias).await;
     tokio::fs::copy(current_exe, alias)
@@ -672,6 +677,7 @@ async fn sync_alias_binary(current_exe: &Path, alias: &Path) -> Result<()> {
     Ok(())
 }
 
+/// Restore an optional alias backup, or remove an alias created during update.
 async fn rollback_optional_binary(target: &Path, backup: Option<&Path>) -> Result<()> {
     if let Some(backup) = backup {
         rollback_binary(backup, target).await
@@ -681,6 +687,7 @@ async fn rollback_optional_binary(target: &Path, backup: Option<&Path>) -> Resul
     }
 }
 
+/// Roll back the main binary and alias binary, attempting both paths.
 async fn rollback_binary_pair(
     backup: &Path,
     target: &Path,
