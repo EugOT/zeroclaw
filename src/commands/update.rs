@@ -2,7 +2,7 @@
 
 use anyhow::{Context, Result, bail};
 use sha2::{Digest, Sha256};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 #[cfg(feature = "agent-runtime")]
 use zeroclaw_runtime::i18n::get_required_cli_string_with_args;
@@ -129,6 +129,7 @@ pub async fn run(target_version: Option<&str>) -> Result<()> {
 
     let current_exe =
         std::env::current_exe().context("cannot determine current executable path")?;
+    let alias_exe = sibling_alias_path(&current_exe);
 
     // Phase 2: Download
     ::zeroclaw_log::record!(
@@ -155,6 +156,11 @@ pub async fn run(target_version: Option<&str>) -> Result<()> {
     tokio::fs::copy(&current_exe, &backup_path)
         .await
         .context("failed to backup current binary")?;
+    let alias_backup_path = if let Some(alias) = alias_exe.as_deref() {
+        backup_existing_binary(alias).await?
+    } else {
+        None
+    };
 
     // Phase 4: Validate
     ::zeroclaw_log::record!(
@@ -198,8 +204,28 @@ pub async fn run(target_version: Option<&str>) -> Result<()> {
     );
     match smoke_test(&current_exe).await {
         Ok(()) => {
+            if let Some(alias) = alias_exe.as_deref() {
+                if let Err(e) = async {
+                    sync_alias_binary(&current_exe, alias).await?;
+                    smoke_test(alias).await
+                }
+                .await
+                {
+                    rollback_binary(&backup_path, &current_exe)
+                        .await
+                        .context("rollback after alias sync failure")?;
+                    rollback_optional_binary(alias, alias_backup_path.as_deref())
+                        .await
+                        .context("rollback alias after alias sync failure")?;
+                    bail!("Update rolled back — alias sync failed: {e}");
+                }
+            }
+
             // Cleanup backup on success
             let _ = tokio::fs::remove_file(&backup_path).await;
+            if let Some(alias_backup) = alias_backup_path.as_deref() {
+                let _ = tokio::fs::remove_file(alias_backup).await;
+            }
             println!("{}", update_success_message(&update_info.latest_version));
             Ok(())
         }
@@ -214,6 +240,11 @@ pub async fn run(target_version: Option<&str>) -> Result<()> {
             rollback_binary(&backup_path, &current_exe)
                 .await
                 .context("rollback after smoke test failure")?;
+            if let Some(alias) = alias_exe.as_deref() {
+                rollback_optional_binary(alias, alias_backup_path.as_deref())
+                    .await
+                    .context("rollback alias after smoke test failure")?;
+            }
             bail!("Update rolled back — smoke test failed: {e}");
         }
     }
@@ -596,6 +627,64 @@ async fn rollback_binary(backup: &Path, target: &Path) -> Result<()> {
     Ok(())
 }
 
+fn sibling_alias_path(current_exe: &Path) -> Option<PathBuf> {
+    let file_name = current_exe.file_name()?.to_str()?;
+    let sibling_name = match file_name {
+        "zeroclaw" => "zrc",
+        "zrc" => "zeroclaw",
+        "zeroclaw.exe" => "zrc.exe",
+        "zrc.exe" => "zeroclaw.exe",
+        _ => return None,
+    };
+    Some(current_exe.with_file_name(sibling_name))
+}
+
+async fn backup_existing_binary(path: &Path) -> Result<Option<PathBuf>> {
+    match tokio::fs::metadata(path).await {
+        Ok(meta) if meta.is_file() => {
+            let backup = path.with_extension("bak");
+            tokio::fs::copy(path, &backup)
+                .await
+                .with_context(|| format!("failed to backup alias binary {}", path.display()))?;
+            Ok(Some(backup))
+        }
+        Ok(_) => Ok(None),
+        Err(err) if err.kind() == std::io::ErrorKind::NotFound => Ok(None),
+        Err(err) => {
+            Err(err).with_context(|| format!("failed to stat alias binary {}", path.display()))
+        }
+    }
+}
+
+async fn sync_alias_binary(current_exe: &Path, alias: &Path) -> Result<()> {
+    let _ = tokio::fs::remove_file(alias).await;
+    tokio::fs::copy(current_exe, alias)
+        .await
+        .with_context(|| format!("failed to sync alias binary {}", alias.display()))?;
+    let perms = tokio::fs::metadata(current_exe)
+        .await
+        .context("failed to read updated binary permissions")?
+        .permissions();
+    tokio::fs::set_permissions(alias, perms)
+        .await
+        .with_context(|| {
+            format!(
+                "failed to set alias binary permissions for {}",
+                alias.display()
+            )
+        })?;
+    Ok(())
+}
+
+async fn rollback_optional_binary(target: &Path, backup: Option<&Path>) -> Result<()> {
+    if let Some(backup) = backup {
+        rollback_binary(backup, target).await
+    } else {
+        let _ = tokio::fs::remove_file(target).await;
+        Ok(())
+    }
+}
+
 async fn smoke_test(binary: &Path) -> Result<()> {
     let output = tokio::process::Command::new(binary)
         .arg("--version")
@@ -650,6 +739,23 @@ mod tests {
             target_triple_for("windows", "x86_64", true),
             Some("x86_64-pc-windows-gnu")
         );
+    }
+
+    #[test]
+    fn sibling_alias_path_maps_zeroclaw_and_zrc_names() {
+        assert_eq!(
+            sibling_alias_path(Path::new("/usr/local/bin/zeroclaw")).unwrap(),
+            PathBuf::from("/usr/local/bin/zrc")
+        );
+        assert_eq!(
+            sibling_alias_path(Path::new("/usr/local/bin/zrc")).unwrap(),
+            PathBuf::from("/usr/local/bin/zeroclaw")
+        );
+        assert_eq!(
+            sibling_alias_path(Path::new("/tmp/zeroclaw.exe")).unwrap(),
+            PathBuf::from("/tmp/zrc.exe")
+        );
+        assert!(sibling_alias_path(Path::new("/usr/local/bin/other")).is_none());
     }
 
     fn make_release(assets: &[&str]) -> serde_json::Value {
