@@ -417,7 +417,7 @@ mod tests {
         assert!(!config.enabled);
         assert_eq!(config.timeout_secs, 600);
         assert_eq!(config.max_output_bytes, 2_097_152);
-        assert_eq!(config.model, "gpt-5.5");
+        assert_eq!(config.model, "gpt-5.6-sol");
         assert_eq!(config.reasoning_effort, "medium");
     }
 }
