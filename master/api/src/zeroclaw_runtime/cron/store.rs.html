@@ -1,6 +1,6 @@
 <!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `crates/zeroclaw-runtime/src/cron/store.rs`."><title>store.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-17e0aaed.css"><script id="default-settings" 
 data-use_system_theme="false"
-data-theme="ayu"></script><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="zeroclaw_runtime" data-themes="" data-resource-suffix="" data-rustdoc-version="1.96.1 (31fca3adb 2026-06-26)" data-channel="1.96.1" data-search-js="search-b5634cc7.js" data-stringdex-js="stringdex-2da4960a.js" data-settings-js="settings-170eb4bf.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-5013f961.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-f7c3ffd8.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">zeroclaw_runtime/cron/</div>store.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span><span class="kw">crate</span>::cron::{
+data-theme="ayu"></script><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="zeroclaw_runtime" data-themes="" data-resource-suffix="" data-rustdoc-version="1.97.1 (8bab26f4f 2026-07-14)" data-channel="1.97.1" data-search-js="search-fd9372ac.js" data-stringdex-js="stringdex-2da4960a.js" data-settings-js="settings-170eb4bf.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-fcd733ba.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-f7c3ffd8.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">zeroclaw_runtime/cron/</div>store.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span><span class="kw">crate</span>::cron::{
 <a href=#2 id=2 data-nosnippet>2</a>    CronJob, CronJobPatch, CronRun, DeliveryConfig, JobType, Schedule, SessionTarget,
 <a href=#3 id=3 data-nosnippet>3</a>    next_run_for_schedule, schedule_cron_expression, validate_delivery_config, validate_schedule,
 <a href=#4 id=4 data-nosnippet>4</a>};
@@ -1337,7 +1337,7 @@ data-theme="ayu"></script><meta name="rustdoc-vars" data-root-path="../../../" d
 <a href=#1335 id=1335 data-nosnippet>1335</a>
 <a href=#1336 id=1336 data-nosnippet>1336</a><span class="attr">#[cfg(test)]
 <a href=#1337 id=1337 data-nosnippet>1337</a></span><span class="kw">mod </span>tests {
-<a href=#1338 id=1338 data-nosnippet>1338</a>    <span class="kw">use </span>super::<span class="kw-2">*</span>;
+<a href=#1338 id=1338 data-nosnippet>1338</a>    <span class="kw">use super</span>::<span class="kw-2">*</span>;
 <a href=#1339 id=1339 data-nosnippet>1339</a>    <span class="kw">use </span>chrono::Duration <span class="kw">as </span>ChronoDuration;
 <a href=#1340 id=1340 data-nosnippet>1340</a>    <span class="kw">use </span>tempfile::TempDir;
 <a href=#1341 id=1341 data-nosnippet>1341</a>    <span class="kw">use </span>zeroclaw_config::schema::Config;
@@ -1452,7 +1452,7 @@ data-theme="ayu"></script><meta name="rustdoc-vars" data-root-path="../../../" d
 <a href=#1450 id=1450 data-nosnippet>1450</a>                <span class="string">"legacy-schema"</span>,
 <a href=#1451 id=1451 data-nosnippet>1451</a>                <span class="string">"*/5 * * * *"</span>,
 <a href=#1452 id=1452 data-nosnippet>1452</a>                <span class="string">"echo legacy"</span>,
-<a href=#1453 id=1453 data-nosnippet>1453</a>                Option::&lt;String&gt;::None,
+<a href=#1453 id=1453 data-nosnippet>1453</a>                <span class="prelude-ty">Option</span>::&lt;String&gt;::None,
 <a href=#1454 id=1454 data-nosnippet>1454</a>                Utc::now().to_rfc3339(),
 <a href=#1455 id=1455 data-nosnippet>1455</a>                (Utc::now() + ChronoDuration::minutes(<span class="number">5</span>)).to_rfc3339(),
 <a href=#1456 id=1456 data-nosnippet>1456</a>            ],
@@ -1801,7 +1801,7 @@ data-theme="ayu"></script><meta name="rustdoc-vars" data-root-path="../../../" d
 <a href=#1799 id=1799 data-nosnippet>1799</a>                    <span class="string">"job-type-valid"</span>,
 <a href=#1800 id=1800 data-nosnippet>1800</a>                    <span class="string">"*/5 * * * *"</span>,
 <a href=#1801 id=1801 data-nosnippet>1801</a>                    <span class="string">"echo ok"</span>,
-<a href=#1802 id=1802 data-nosnippet>1802</a>                    Option::&lt;String&gt;::None,
+<a href=#1802 id=1802 data-nosnippet>1802</a>                    <span class="prelude-ty">Option</span>::&lt;String&gt;::None,
 <a href=#1803 id=1803 data-nosnippet>1803</a>                    <span class="string">"agent"</span>,
 <a href=#1804 id=1804 data-nosnippet>1804</a>                    now.to_rfc3339(),
 <a href=#1805 id=1805 data-nosnippet>1805</a>                    (now + ChronoDuration::minutes(<span class="number">5</span>)).to_rfc3339(),
@@ -1829,7 +1829,7 @@ data-theme="ayu"></script><meta name="rustdoc-vars" data-root-path="../../../" d
 <a href=#1827 id=1827 data-nosnippet>1827</a>                    <span class="string">"job-type-invalid"</span>,
 <a href=#1828 id=1828 data-nosnippet>1828</a>                    <span class="string">"*/5 * * * *"</span>,
 <a href=#1829 id=1829 data-nosnippet>1829</a>                    <span class="string">"echo ok"</span>,
-<a href=#1830 id=1830 data-nosnippet>1830</a>                    Option::&lt;String&gt;::None,
+<a href=#1830 id=1830 data-nosnippet>1830</a>                    <span class="prelude-ty">Option</span>::&lt;String&gt;::None,
 <a href=#1831 id=1831 data-nosnippet>1831</a>                    <span class="string">"unknown"</span>,
 <a href=#1832 id=1832 data-nosnippet>1832</a>                    now.to_rfc3339(),
 <a href=#1833 id=1833 data-nosnippet>1833</a>                    (now + ChronoDuration::minutes(<span class="number">5</span>)).to_rfc3339(),

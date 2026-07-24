@@ -1,6 +1,6 @@
 <!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `crates/zeroclaw-runtime/src/agent/loop_.rs`."><title>loop_.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-17e0aaed.css"><script id="default-settings" 
 data-use_system_theme="false"
-data-theme="ayu"></script><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="zeroclaw_runtime" data-themes="" data-resource-suffix="" data-rustdoc-version="1.96.1 (31fca3adb 2026-06-26)" data-channel="1.96.1" data-search-js="search-b5634cc7.js" data-stringdex-js="stringdex-2da4960a.js" data-settings-js="settings-170eb4bf.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-5013f961.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-f7c3ffd8.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">zeroclaw_runtime/agent/</div>loop_.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-5"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span><span class="kw">crate</span>::approval::{ApprovalManager, ApprovalRequest, ApprovalRequirement, ApprovalResponse};
+data-theme="ayu"></script><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="zeroclaw_runtime" data-themes="" data-resource-suffix="" data-rustdoc-version="1.97.1 (8bab26f4f 2026-07-14)" data-channel="1.97.1" data-search-js="search-fd9372ac.js" data-stringdex-js="stringdex-2da4960a.js" data-settings-js="settings-170eb4bf.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-fcd733ba.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-f7c3ffd8.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">zeroclaw_runtime/agent/</div>loop_.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-5"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span><span class="kw">crate</span>::approval::{ApprovalManager, ApprovalRequest, ApprovalRequirement, ApprovalResponse};
 <a href=#2 id=2 data-nosnippet>2</a>
 <a href=#3 id=3 data-nosnippet>3</a><span class="doccomment">/// CLI channel factory, injected by the binary. Returns a `Box&lt;dyn Channel&gt;` for interactive mode.
 <a href=#4 id=4 data-nosnippet>4</a></span><span class="kw">pub static </span>CLI_CHANNEL_FN: std::sync::OnceLock&lt;
@@ -5373,7 +5373,7 @@ data-theme="ayu"></script><meta name="rustdoc-vars" data-root-path="../../../" d
 <a href=#5371 id=5371 data-nosnippet>5371</a>
 <a href=#5372 id=5372 data-nosnippet>5372</a><span class="attr">#[cfg(test)]
 <a href=#5373 id=5373 data-nosnippet>5373</a></span><span class="kw">mod </span>tests {
-<a href=#5374 id=5374 data-nosnippet>5374</a>    <span class="kw">use </span>super::{
+<a href=#5374 id=5374 data-nosnippet>5374</a>    <span class="kw">use super</span>::{
 <a href=#5375 id=5375 data-nosnippet>5375</a>        apply_text_tool_prompt_policy, emergency_history_trim, estimate_history_tokens,
 <a href=#5376 id=5376 data-nosnippet>5376</a>        fast_trim_tool_results, load_interactive_session_history,
 <a href=#5377 id=5377 data-nosnippet>5377</a>        maybe_inject_channel_delivery_defaults, save_interactive_session_history,
@@ -5847,7 +5847,7 @@ data-theme="ayu"></script><meta name="rustdoc-vars" data-root-path="../../../" d
 <a href=#5845 id=5845 data-nosnippet>5845</a>        );
 <a href=#5846 id=5846 data-nosnippet>5846</a>    }
 <a href=#5847 id=5847 data-nosnippet>5847</a>
-<a href=#5848 id=5848 data-nosnippet>5848</a>    <span class="kw">use </span>super::<span class="kw-2">*</span>;
+<a href=#5848 id=5848 data-nosnippet>5848</a>    <span class="kw">use super</span>::<span class="kw-2">*</span>;
 <a href=#5849 id=5849 data-nosnippet>5849</a>    <span class="kw">use </span>async_trait::async_trait;
 <a href=#5850 id=5850 data-nosnippet>5850</a>    <span class="kw">use </span>base64::{Engine <span class="kw">as _</span>, engine::general_purpose::STANDARD};
 <a href=#5851 id=5851 data-nosnippet>5851</a>    <span class="kw">use </span>std::collections::VecDeque;
@@ -12233,7 +12233,7 @@ data-theme="ayu"></script><meta name="rustdoc-vars" data-root-path="../../../" d
 <a href=#12231 id=12231 data-nosnippet>12231</a>
 <a href=#12232 id=12232 data-nosnippet>12232</a>    </span><span class="attr">#[tokio::test]
 <a href=#12233 id=12233 data-nosnippet>12233</a>    </span><span class="kw">async fn </span>cost_tracking_records_usage_when_scoped() {
-<a href=#12234 id=12234 data-nosnippet>12234</a>        <span class="kw">use </span>super::{
+<a href=#12234 id=12234 data-nosnippet>12234</a>        <span class="kw">use super</span>::{
 <a href=#12235 id=12235 data-nosnippet>12235</a>            TOOL_LOOP_COST_TRACKING_CONTEXT, ToolLoopCostTrackingContext, run_tool_call_loop,
 <a href=#12236 id=12236 data-nosnippet>12236</a>        };
 <a href=#12237 id=12237 data-nosnippet>12237</a>        <span class="kw">use </span><span class="kw">crate</span>::cost::CostTracker;
@@ -12384,7 +12384,7 @@ data-theme="ayu"></script><meta name="rustdoc-vars" data-root-path="../../../" d
 <a href=#12382 id=12382 data-nosnippet>12382</a>
 <a href=#12383 id=12383 data-nosnippet>12383</a>    <span class="attr">#[tokio::test]
 <a href=#12384 id=12384 data-nosnippet>12384</a>    </span><span class="kw">async fn </span>cost_tracking_enforces_budget() {
-<a href=#12385 id=12385 data-nosnippet>12385</a>        <span class="kw">use </span>super::{
+<a href=#12385 id=12385 data-nosnippet>12385</a>        <span class="kw">use super</span>::{
 <a href=#12386 id=12386 data-nosnippet>12386</a>            TOOL_LOOP_COST_TRACKING_CONTEXT, ToolLoopCostTrackingContext, run_tool_call_loop,
 <a href=#12387 id=12387 data-nosnippet>12387</a>        };
 <a href=#12388 id=12388 data-nosnippet>12388</a>        <span class="kw">use </span><span class="kw">crate</span>::cost::CostTracker;

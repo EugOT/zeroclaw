@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":["TASK_EVENT_NAME"],"macro":["spawn"]};
+window.SIDEBAR_ITEMS = {"constant":["TASK_EVENT_NAME"],"macro":[["spawn",1]]};

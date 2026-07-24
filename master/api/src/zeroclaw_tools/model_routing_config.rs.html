@@ -1,6 +1,6 @@
 <!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `crates/zeroclaw-tools/src/model_routing_config.rs`."><title>model_routing_config.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-17e0aaed.css"><script id="default-settings" 
 data-use_system_theme="false"
-data-theme="ayu"></script><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="zeroclaw_tools" data-themes="" data-resource-suffix="" data-rustdoc-version="1.96.1 (31fca3adb 2026-06-26)" data-channel="1.96.1" data-search-js="search-b5634cc7.js" data-stringdex-js="stringdex-2da4960a.js" data-settings-js="settings-170eb4bf.js" ><script src="../../static.files/storage-41dd4d93.js"></script><script defer src="../../static.files/src-script-813739b1.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-5013f961.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-f7c3ffd8.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">zeroclaw_tools/</div>model_routing_config.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span><span class="kw">crate</span>::util_helpers::MaybeSet;
+data-theme="ayu"></script><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="zeroclaw_tools" data-themes="" data-resource-suffix="" data-rustdoc-version="1.97.1 (8bab26f4f 2026-07-14)" data-channel="1.97.1" data-search-js="search-fd9372ac.js" data-stringdex-js="stringdex-2da4960a.js" data-settings-js="settings-170eb4bf.js" ><script src="../../static.files/storage-41dd4d93.js"></script><script defer src="../../static.files/src-script-813739b1.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-fcd733ba.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-f7c3ffd8.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">zeroclaw_tools/</div>model_routing_config.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span><span class="kw">crate</span>::util_helpers::MaybeSet;
 <a href=#2 id=2 data-nosnippet>2</a><span class="kw">use </span>async_trait::async_trait;
 <a href=#3 id=3 data-nosnippet>3</a><span class="kw">use </span>serde_json::{Value, json};
 <a href=#4 id=4 data-nosnippet>4</a><span class="kw">use </span>std::collections::BTreeMap;
@@ -461,7 +461,7 @@ data-theme="ayu"></script><meta name="rustdoc-vars" data-root-path="../../" data
 <a href=#459 id=459 data-nosnippet>459</a>                        <span class="string">"action"</span>: <span class="string">"upsert_scenario"</span>,
 <a href=#460 id=460 data-nosnippet>460</a>                        <span class="string">"hint"</span>: <span class="string">"coding"</span>,
 <a href=#461 id=461 data-nosnippet>461</a>                        <span class="string">"model_provider"</span>: <span class="string">"openai"</span>,
-<a href=#462 id=462 data-nosnippet>462</a>                        <span class="string">"model"</span>: <span class="string">"gpt-5.5"</span>,
+<a href=#462 id=462 data-nosnippet>462</a>                        <span class="string">"model"</span>: <span class="string">"gpt-5.6-sol"</span>,
 <a href=#463 id=463 data-nosnippet>463</a>                        <span class="string">"classification_enabled"</span>: <span class="bool-val">true</span>,
 <a href=#464 id=464 data-nosnippet>464</a>                        <span class="string">"keywords"</span>: [<span class="string">"code"</span>, <span class="string">"bug"</span>, <span class="string">"refactor"</span>, <span class="string">"test"</span>],
 <a href=#465 id=465 data-nosnippet>465</a>                        <span class="string">"patterns"</span>: [<span class="string">"```"</span>],
@@ -1119,7 +1119,7 @@ data-theme="ayu"></script><meta name="rustdoc-vars" data-root-path="../../" data
 <a href=#1117 id=1117 data-nosnippet>1117</a>
 <a href=#1118 id=1118 data-nosnippet>1118</a><span class="attr">#[cfg(test)]
 <a href=#1119 id=1119 data-nosnippet>1119</a></span><span class="kw">mod </span>tests {
-<a href=#1120 id=1120 data-nosnippet>1120</a>    <span class="kw">use </span>super::<span class="kw-2">*</span>;
+<a href=#1120 id=1120 data-nosnippet>1120</a>    <span class="kw">use super</span>::<span class="kw-2">*</span>;
 <a href=#1121 id=1121 data-nosnippet>1121</a>    <span class="kw">use </span>tempfile::TempDir;
 <a href=#1122 id=1122 data-nosnippet>1122</a>    <span class="kw">use </span>zeroclaw_config::autonomy::AutonomyLevel;
 <a href=#1123 id=1123 data-nosnippet>1123</a>    <span class="kw">use </span>zeroclaw_config::policy::SecurityPolicy;
@@ -1193,7 +1193,7 @@ data-theme="ayu"></script><meta name="rustdoc-vars" data-root-path="../../" data
 <a href=#1191 id=1191 data-nosnippet>1191</a>                <span class="string">"action"</span>: <span class="string">"upsert_scenario"</span>,
 <a href=#1192 id=1192 data-nosnippet>1192</a>                <span class="string">"hint"</span>: <span class="string">"coding"</span>,
 <a href=#1193 id=1193 data-nosnippet>1193</a>                <span class="string">"model_provider"</span>: <span class="string">"openai"</span>,
-<a href=#1194 id=1194 data-nosnippet>1194</a>                <span class="string">"model"</span>: <span class="string">"gpt-5.5"</span>,
+<a href=#1194 id=1194 data-nosnippet>1194</a>                <span class="string">"model"</span>: <span class="string">"gpt-5.6-sol"</span>,
 <a href=#1195 id=1195 data-nosnippet>1195</a>                <span class="string">"classification_enabled"</span>: <span class="bool-val">true</span>,
 <a href=#1196 id=1196 data-nosnippet>1196</a>                <span class="string">"keywords"</span>: [<span class="string">"code"</span>, <span class="string">"bug"</span>, <span class="string">"refactor"</span>],
 <a href=#1197 id=1197 data-nosnippet>1197</a>                <span class="string">"patterns"</span>: [<span class="string">"```"</span>],
@@ -1214,7 +1214,7 @@ data-theme="ayu"></script><meta name="rustdoc-vars" data-root-path="../../" data
 <a href=#1212 id=1212 data-nosnippet>1212</a>        <span class="macro">assert!</span>(scenarios.iter().any(|item| {
 <a href=#1213 id=1213 data-nosnippet>1213</a>            item[<span class="string">"hint"</span>] == <span class="macro">json!</span>(<span class="string">"coding"</span>)
 <a href=#1214 id=1214 data-nosnippet>1214</a>                &amp;&amp; item[<span class="string">"model_provider"</span>] == <span class="macro">json!</span>(<span class="string">"openai"</span>)
-<a href=#1215 id=1215 data-nosnippet>1215</a>                &amp;&amp; item[<span class="string">"model"</span>] == <span class="macro">json!</span>(<span class="string">"gpt-5.5"</span>)
+<a href=#1215 id=1215 data-nosnippet>1215</a>                &amp;&amp; item[<span class="string">"model"</span>] == <span class="macro">json!</span>(<span class="string">"gpt-5.6-sol"</span>)
 <a href=#1216 id=1216 data-nosnippet>1216</a>        }));
 <a href=#1217 id=1217 data-nosnippet>1217</a>    }
 <a href=#1218 id=1218 data-nosnippet>1218</a>
@@ -1228,7 +1228,7 @@ data-theme="ayu"></script><meta name="rustdoc-vars" data-root-path="../../" data
 <a href=#1226 id=1226 data-nosnippet>1226</a>                <span class="string">"action"</span>: <span class="string">"upsert_scenario"</span>,
 <a href=#1227 id=1227 data-nosnippet>1227</a>                <span class="string">"hint"</span>: <span class="string">"coding"</span>,
 <a href=#1228 id=1228 data-nosnippet>1228</a>                <span class="string">"model_provider"</span>: <span class="string">"openai"</span>,
-<a href=#1229 id=1229 data-nosnippet>1229</a>                <span class="string">"model"</span>: <span class="string">"gpt-5.5"</span>,
+<a href=#1229 id=1229 data-nosnippet>1229</a>                <span class="string">"model"</span>: <span class="string">"gpt-5.6-sol"</span>,
 <a href=#1230 id=1230 data-nosnippet>1230</a>                <span class="string">"classification_enabled"</span>: <span class="bool-val">true</span>,
 <a href=#1231 id=1231 data-nosnippet>1231</a>                <span class="string">"keywords"</span>: [<span class="string">"code"</span>]
 <a href=#1232 id=1232 data-nosnippet>1232</a>            }))
@@ -1260,7 +1260,7 @@ data-theme="ayu"></script><meta name="rustdoc-vars" data-root-path="../../" data
 <a href=#1258 id=1258 data-nosnippet>1258</a>                <span class="string">"action"</span>: <span class="string">"upsert_agent"</span>,
 <a href=#1259 id=1259 data-nosnippet>1259</a>                <span class="string">"name"</span>: <span class="string">"coder"</span>,
 <a href=#1260 id=1260 data-nosnippet>1260</a>                <span class="string">"model_provider"</span>: <span class="string">"openai"</span>,
-<a href=#1261 id=1261 data-nosnippet>1261</a>                <span class="string">"model"</span>: <span class="string">"gpt-5.5"</span>,
+<a href=#1261 id=1261 data-nosnippet>1261</a>                <span class="string">"model"</span>: <span class="string">"gpt-5.6-sol"</span>,
 <a href=#1262 id=1262 data-nosnippet>1262</a>                <span class="string">"agentic"</span>: <span class="bool-val">true</span>,
 <a href=#1263 id=1263 data-nosnippet>1263</a>                <span class="string">"allowed_tools"</span>: [<span class="string">"file_read"</span>, <span class="string">"file_write"</span>, <span class="string">"shell"</span>],
 <a href=#1264 id=1264 data-nosnippet>1264</a>                <span class="string">"max_iterations"</span>: <span class="number">6
