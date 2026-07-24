@@ -7796,7 +7796,7 @@ fn default_codex_cli_max_output_bytes() -> usize {
 }
 
 fn default_codex_cli_model() -> String {
-    "gpt-5.5".into()
+    "gpt-5.6-sol".into()
 }
 
 fn default_codex_cli_reasoning_effort() -> String {
@@ -21505,7 +21505,7 @@ default_temperature = 0.7
         let raw = r#"
 default_temperature = 0.7
 model_provider = "openai"
-model = "gpt-5.5"
+model = "gpt-5.6-sol"
 
 [model_providers.openai]
 api_key = "sk-test"
@@ -21529,7 +21529,7 @@ requires_openai_auth = true
             .expect("openai.default entry");
         assert_eq!(profile.api_key.as_deref(), Some("sk-test"));
         assert_eq!(profile.uri.as_deref(), Some("https://api.openai.com/v1"));
-        assert_eq!(profile.model.as_deref(), Some("gpt-5.5"));
+        assert_eq!(profile.model.as_deref(), Some("gpt-5.6-sol"));
         assert_eq!(profile.wire_api, Some(WireApi::Responses));
         assert!(profile.requires_openai_auth);
     }
