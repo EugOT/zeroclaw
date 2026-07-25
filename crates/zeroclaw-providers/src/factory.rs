@@ -1590,6 +1590,33 @@ mod tests {
     }
 
     #[test]
+    fn custom_factory_loopback_gateway_responses_with_native_tools() {
+        // CEL-856: CLIProxyAPI-style custom alias (loopback + Responses + tools).
+        use zeroclaw_config::schema::{CustomModelProviderConfig, ModelProviderConfig, WireApi};
+        let cfg = CustomModelProviderConfig {
+            base: ModelProviderConfig {
+                uri: Some("http://127.0.0.1:8317/v1".to_string()),
+                wire_api: Some(WireApi::Responses),
+                native_tools: Some(true),
+                ..Default::default()
+            },
+        };
+        let provider = cfg
+            .create_provider(
+                "cliproxyapi",
+                Some("local-gateway-token"),
+                Some("http://127.0.0.1:8317/v1"),
+                &ModelProviderRuntimeOptions::default(),
+            )
+            .unwrap();
+        assert_eq!(provider.default_wire_api(), "responses");
+        assert!(
+            provider.supports_native_tools(),
+            "loopback gateway aliases that set native_tools = true must keep tool calling"
+        );
+    }
+
+    #[test]
     fn custom_factory_defaults_to_chat_completions_without_wire_api() {
         use zeroclaw_config::schema::{CustomModelProviderConfig, ModelProviderConfig};
         let cfg = CustomModelProviderConfig {
