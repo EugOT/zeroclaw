@@ -37,7 +37,7 @@
             const path_to_root = "../";
             const default_light_theme = "default-dark";
             const default_dark_theme = "default-dark";
-            window.path_to_searchindex_js = "../searchindex-a5b50260.js";
+            window.path_to_searchindex_js = "../searchindex-6b3a6775.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-9364d956.js"></script>
@@ -342,7 +342,7 @@
 <h3 id="多区域moonshot--qwen--glm--minimax--"><a class="header" href="#多区域moonshot--qwen--glm--minimax--">多区域（Moonshot / Qwen / GLM / MiniMax / …）</a></h3>
 <p>每个系列一种类型；通过别名条目上类型化的 <code>endpoint</code> 字段选择区域。</p>
 <h3 id="自定义-openai-兼容端点"><a class="header" href="#自定义-openai-兼容端点">自定义 OpenAI 兼容端点</a></h3>
-<p><code>custom</code> 插槽需要 <code>uri</code>。请参阅<a href="./custom.html">自定义提供程序</a>。</p>
+<p>The <code>custom</code> slot requires <code>uri</code>. See <a href="./custom.html">Custom providers</a>. For a loopback OpenAI Responses gateway (for example CLIProxyAPI), set <code>wire_api = "responses"</code>, point <code>uri</code> at <code>http://127.0.0.1:&lt;port&gt;/v1</code>, inject the local token via <code>ZEROCLAW_providers__models__custom__&lt;alias&gt;__api_key</code>, and keep <code>requires_openai_auth</code> unset so the branded OpenAI / Codex subscription path is not reused.</p>
 <h2 id="为代理选择使用哪个提供商"><a class="header" href="#为代理选择使用哪个提供商">为代理选择使用哪个提供商</a></h2>
 <p>智能体通过点分隔的别名引用提供方。提供方条目本身不会执行任何操作。</p>
 <p><code>risk_profile</code> 和 <code>runtime_profile</code> 引用各自独立的别名映射，因此它们的名称不必匹配（<code>runtime_profile</code> 同样是可选的）。如果 <code>model_provider</code> 无法解析到已配置的 <code>[providers.models.&lt;type&gt;.&lt;alias&gt;]</code> 条目，或者 <code>risk_profile</code> 无法解析到已配置的 <code>[risk_profiles.&lt;alias&gt;]</code> 条目，<code>Config::validate()</code> 会在启动时直接报错失败。</p>

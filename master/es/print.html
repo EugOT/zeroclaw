@@ -38,7 +38,7 @@
             const path_to_root = "";
             const default_light_theme = "default-dark";
             const default_dark_theme = "default-dark";
-            window.path_to_searchindex_js = "searchindex-8c4db813.js";
+            window.path_to_searchindex_js = "searchindex-53a74a4e.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-f27dd488.js"></script>
@@ -8585,7 +8585,7 @@ api_key = "..."
 <h3 id="multirregión-moonshot--qwen--glm--minimax--"><a class="header" href="#multirregión-moonshot--qwen--glm--minimax--">Multirregión (Moonshot / Qwen / GLM / MiniMax / …)</a></h3>
 <p>Un tipo por familia; selecciona la región mediante el campo tipado <code>endpoint</code> en la entrada del alias.</p>
 <h3 id="endpoint-personalizado-compatible-con-openai"><a class="header" href="#endpoint-personalizado-compatible-con-openai">Endpoint personalizado compatible con OpenAI</a></h3>
-<p>La ranura <code>custom</code> requiere <code>uri</code>. Consulta <a href="#proveedores-personalizados">Proveedores personalizados</a>.</p>
+<p>The <code>custom</code> slot requires <code>uri</code>. See <a href="#proveedores-personalizados">Custom providers</a>. For a loopback OpenAI Responses gateway (for example CLIProxyAPI), set <code>wire_api = "responses"</code>, point <code>uri</code> at <code>http://127.0.0.1:&lt;port&gt;/v1</code>, inject the local token via <code>ZEROCLAW_providers__models__custom__&lt;alias&gt;__api_key</code>, and keep <code>requires_openai_auth</code> unset so the branded OpenAI / Codex subscription path is not reused.</p>
 <h2 id="elección-del-proveedor-que-utiliza-un-agente"><a class="header" href="#elección-del-proveedor-que-utiliza-un-agente">Elección del proveedor que utiliza un agente</a></h2>
 <p>Los agentes hacen referencia a un proveedor mediante un alias con puntos. Las entradas de proveedor por sí solas no hacen nada.</p>
 <p><code>risk_profile</code> y <code>runtime_profile</code> hacen referencia a mapas de alias independientes, por lo que sus nombres no tienen por qué coincidir (<code>runtime_profile</code> también es opcional). <code>Config::validate()</code> falla de forma explícita al iniciar si <code>model_provider</code> no se resuelve a una entrada <code>[providers.models.&lt;type&gt;.&lt;alias&gt;]</code> configurada, o si <code>risk_profile</code> no se resuelve a una entrada <code>[risk_profiles.&lt;alias&gt;]</code> configurada.</p>
@@ -9110,6 +9110,24 @@ model    = "big-pickle"
 wire_api = "responses"
 </code></pre>
 <p>The setting governs both the primary agent path and delegate targets, so a delegate whose target alias declares <code>wire_api = "responses"</code> reaches the endpoint over the responses wire.</p>
+<h2 id="loopback-openai-compatible-gateway-cliproxyapi"><a class="header" href="#loopback-openai-compatible-gateway-cliproxyapi">Loopback OpenAI-compatible gateway (CLIProxyAPI)</a></h2>
+<p>For a local OpenAI-compatible / Responses gateway (for example CLIProxyAPI on <code>127.0.0.1:8317</code>), use the <code>custom</code> slot with an explicit loopback <code>uri</code> and <code>wire_api = "responses"</code>. Keep native OpenAI / Codex subscription aliases on a separate config (or leave them unset) so the gateway path stays opt-in:</p>
+<pre><code class="language-toml">[providers.models.custom.cliproxyapi]
+uri = "http://127.0.0.1:8317/v1"
+model = "gpt-5.6-sol"
+wire_api = "responses"
+native_tools = true
+
+[agents.default]
+model_provider = "custom.cliproxyapi"
+risk_profile = "supervised"
+</code></pre>
+<p>Inject the local gateway token at process start (never commit it). Schema-mirror env overrides are never persisted:</p>
+<pre><code class="language-sh">export ZEROCLAW_CONFIG_DIR="$HOME/.zeroclaw-cliproxyapi"
+export ZEROCLAW_providers__models__custom__cliproxyapi__api_key="$(cliproxyapi-client-token)"
+zeroclaw agent -a default -m "hola"
+</code></pre>
+<p>Do <strong>not</strong> set <code>requires_openai_auth = true</code> on this alias: that path reads the Codex / ChatGPT subscription login and is for the branded <code>openai</code> slot, not a foreign loopback gateway. Leave empty <code>fallback</code> / <code>fallback_models</code> so an outage fails closed instead of falling through to another credential.</p>
 <h2 id="validación-1"><a class="header" href="#validación-1">Validación</a></h2>
 <p>Independientemente del enfoque:</p>
 <div class="os-tabs-src">

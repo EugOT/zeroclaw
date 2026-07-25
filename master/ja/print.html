@@ -38,7 +38,7 @@
             const path_to_root = "";
             const default_light_theme = "default-dark";
             const default_dark_theme = "default-dark";
-            window.path_to_searchindex_js = "searchindex-01557033.js";
+            window.path_to_searchindex_js = "searchindex-950d1815.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-8e2df50e.js"></script>
@@ -8585,7 +8585,7 @@ api_key = "..."
 <h3 id="マルチリージョン-moonshot--qwen--glm--minimax--"><a class="header" href="#マルチリージョン-moonshot--qwen--glm--minimax--">マルチリージョン (Moonshot / Qwen / GLM / MiniMax / …)</a></h3>
 <p>ファミリーごとに1つの型を指定します。エイリアスエントリの型付き <code>endpoint</code> フィールドを使用してリージョンを選択してください。</p>
 <h3 id="カスタム-openai-互換エンドポイント"><a class="header" href="#カスタム-openai-互換エンドポイント">カスタム OpenAI 互換エンドポイント</a></h3>
-<p><code>custom</code> スロットには <code>uri</code> が必要です。<a href="#カスタムプロバイダー">Custom providers</a> を参照してください。</p>
+<p>The <code>custom</code> slot requires <code>uri</code>. See <a href="#カスタムプロバイダー">Custom providers</a>. For a loopback OpenAI Responses gateway (for example CLIProxyAPI), set <code>wire_api = "responses"</code>, point <code>uri</code> at <code>http://127.0.0.1:&lt;port&gt;/v1</code>, inject the local token via <code>ZEROCLAW_providers__models__custom__&lt;alias&gt;__api_key</code>, and keep <code>requires_openai_auth</code> unset so the branded OpenAI / Codex subscription path is not reused.</p>
 <h2 id="エージェントが使用するプロバイダーの選択"><a class="header" href="#エージェントが使用するプロバイダーの選択">エージェントが使用するプロバイダーの選択</a></h2>
 <p>エージェントはドット区切りのエイリアスでプロバイダーを参照します。プロバイダーのエントリーは、それ単体では何も行いません。</p>
 <p><code>risk_profile</code> と <code>runtime_profile</code> は独立したエイリアスマップを参照するため、両者の名前は一致する必要はありません（<code>runtime_profile</code> もオプションです）。<code>Config::validate()</code> は、<code>model_provider</code> が設定済みの <code>[providers.models.&lt;type&gt;.&lt;alias&gt;]</code> エントリに解決されない場合、または <code>risk_profile</code> が設定済みの <code>[risk_profiles.&lt;alias&gt;]</code> エントリに解決されない場合、起動時に明示的にエラーを発生させます。</p>
@@ -9110,6 +9110,24 @@ model    = "big-pickle"
 wire_api = "responses"
 </code></pre>
 <p>The setting governs both the primary agent path and delegate targets, so a delegate whose target alias declares <code>wire_api = "responses"</code> reaches the endpoint over the responses wire.</p>
+<h2 id="loopback-openai-compatible-gateway-cliproxyapi"><a class="header" href="#loopback-openai-compatible-gateway-cliproxyapi">Loopback OpenAI-compatible gateway (CLIProxyAPI)</a></h2>
+<p>For a local OpenAI-compatible / Responses gateway (for example CLIProxyAPI on <code>127.0.0.1:8317</code>), use the <code>custom</code> slot with an explicit loopback <code>uri</code> and <code>wire_api = "responses"</code>. Keep native OpenAI / Codex subscription aliases on a separate config (or leave them unset) so the gateway path stays opt-in:</p>
+<pre><code class="language-toml">[providers.models.custom.cliproxyapi]
+uri = "http://127.0.0.1:8317/v1"
+model = "gpt-5.6-sol"
+wire_api = "responses"
+native_tools = true
+
+[agents.default]
+model_provider = "custom.cliproxyapi"
+risk_profile = "supervised"
+</code></pre>
+<p>Inject the local gateway token at process start (never commit it). Schema-mirror env overrides are never persisted:</p>
+<pre><code class="language-sh">export ZEROCLAW_CONFIG_DIR="$HOME/.zeroclaw-cliproxyapi"
+export ZEROCLAW_providers__models__custom__cliproxyapi__api_key="$(cliproxyapi-client-token)"
+zeroclaw agent -a default -m "hello"
+</code></pre>
+<p>Do <strong>not</strong> set <code>requires_openai_auth = true</code> on this alias: that path reads the Codex / ChatGPT subscription login and is for the branded <code>openai</code> slot, not a foreign loopback gateway. Leave empty <code>fallback</code> / <code>fallback_models</code> so an outage fails closed instead of falling through to another credential.</p>
 <h2 id="検証-1"><a class="header" href="#検証-1">検証</a></h2>
 <p>アプローチに関わらず：</p>
 <div class="os-tabs-src">

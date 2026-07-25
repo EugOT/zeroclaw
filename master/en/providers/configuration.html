@@ -37,7 +37,7 @@
             const path_to_root = "../";
             const default_light_theme = "default-dark";
             const default_dark_theme = "default-dark";
-            window.path_to_searchindex_js = "../searchindex-cca7beb2.js";
+            window.path_to_searchindex_js = "../searchindex-71b6beae.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-8b3eb20a.js"></script>
@@ -342,7 +342,12 @@
 <h3 id="multi-region-moonshot--qwen--glm--minimax--"><a class="header" href="#multi-region-moonshot--qwen--glm--minimax--">Multi-region (Moonshot / Qwen / GLM / MiniMax / …)</a></h3>
 <p>One type per family; pick the region via the typed <code>endpoint</code> field on the alias entry.</p>
 <h3 id="custom-openai-compatible-endpoint"><a class="header" href="#custom-openai-compatible-endpoint">Custom OpenAI-compatible endpoint</a></h3>
-<p>The <code>custom</code> slot requires <code>uri</code>. See <a href="./custom.html">Custom providers</a>.</p>
+<p>The <code>custom</code> slot requires <code>uri</code>. See <a href="./custom.html">Custom providers</a>. For a
+loopback OpenAI Responses gateway (for example CLIProxyAPI), set
+<code>wire_api = "responses"</code>, point <code>uri</code> at <code>http://127.0.0.1:&lt;port&gt;/v1</code>, inject the
+local token via <code>ZEROCLAW_providers__models__custom__&lt;alias&gt;__api_key</code>, and keep
+<code>requires_openai_auth</code> unset so the branded OpenAI / Codex subscription path is
+not reused.</p>
 <h2 id="picking-which-provider-an-agent-uses"><a class="header" href="#picking-which-provider-an-agent-uses">Picking which provider an agent uses</a></h2>
 <p>Agents reference a provider by dotted alias. Provider entries on their own do nothing.</p>
 <p><code>risk_profile</code> and <code>runtime_profile</code> reference independent alias maps, so their names need not match (<code>runtime_profile</code> is also optional). <code>Config::validate()</code> fails loud at startup if <code>model_provider</code> doesn’t resolve to a configured <code>[providers.models.&lt;type&gt;.&lt;alias&gt;]</code> entry, or if <code>risk_profile</code> doesn’t resolve to a configured <code>[risk_profiles.&lt;alias&gt;]</code> entry.</p>
