@@ -109,7 +109,7 @@ export ZEROCLAW_providers__models__custom__cliproxyapi__api_key="$(cliproxyapi-c
 zeroclaw agent -a default -m "hello"
 ```
 
-Do **not** set `requires_openai_auth = true` on this alias — that path reads the
+Do **not** set `requires_openai_auth = true` on this alias: that path reads the
 Codex / ChatGPT subscription login and is for the branded `openai` slot, not a
 foreign loopback gateway. Leave empty `fallback` / `fallback_models` so an
 outage fails closed instead of falling through to another credential.
